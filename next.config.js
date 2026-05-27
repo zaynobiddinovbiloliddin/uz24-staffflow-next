@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
+const isDocker = process.env.BUILD_TARGET === 'docker';
+
 const nextConfig = {
-  output: 'standalone',
+  ...(isDocker && { output: 'standalone' }),
   experimental: {
     serverComponentsExternalPackages: ['bcryptjs'],
   },
