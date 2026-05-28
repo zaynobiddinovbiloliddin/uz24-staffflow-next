@@ -23,7 +23,13 @@ export const updateUserSchema = z.object({
   telegramId:   z.string().max(50).nullable().optional(),
   password:     z.string().min(6).max(100).optional(),
   isActive:     z.boolean().optional(),
-  avatar:       z.string().max(200000).nullable().optional(),
+  avatar:       z.string()
+                  .refine(
+                    v => !v || /^data:image\/(jpeg|png|webp|gif);base64,/.test(v),
+                    'Avatar faqat JPEG, PNG, WebP yoki GIF formatida bo\'lishi kerak',
+                  )
+                  .refine(v => !v || v.length <= 150_000, 'Avatar hajmi 100KB dan oshmasligi kerak')
+                  .nullable().optional(),
 });
 
 // ─── Task ────────────────────────────────────────────────────────────────────
@@ -32,7 +38,15 @@ export const createTaskSchema = z.object({
   title:        z.string().min(2, 'Sarlavha kamida 2 ta harf').max(200),
   description:  z.string().max(2000).optional(),
   priority:     z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).default('MEDIUM'),
-  deadline:     z.string().datetime({ offset: true }).optional(),
+  deadline:     z.preprocess(
+    (v) => {
+      if (typeof v !== 'string' || !v) return v;
+      // datetime-local input produces "2025-01-15T14:30" — append UTC offset
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) return v + ':00.000Z';
+      return v;
+    },
+    z.string().datetime({ offset: true }).optional(),
+  ),
   assignedToId: z.string().cuid().optional(),
   departmentId: z.string().cuid().optional(),
 });
@@ -54,7 +68,7 @@ export const departmentSchema = z.object({
 
 // ─── Schedule ────────────────────────────────────────────────────────────────
 
-export const scheduleSchema = z.object({
+const scheduleBaseSchema = z.object({
   userId:    z.string().cuid(),
   date:      z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Sana YYYY-MM-DD formatida bo'lishi kerak"),
   startTime: z.string().regex(/^\d{2}:\d{2}$/, "Vaqt HH:MM formatida bo'lishi kerak"),
@@ -62,6 +76,18 @@ export const scheduleSchema = z.object({
   shiftType: z.enum(['Kunduzgi', 'Kechki', 'Tungi', 'Qisqartirilgan']).default('Kunduzgi'),
   note:      z.string().max(500).optional(),
 });
+
+const timeOrderMsg = { message: "Boshlanish vaqti tugash vaqtidan oldin bo'lishi kerak", path: ['endTime'] };
+
+export const scheduleSchema = scheduleBaseSchema.refine(
+  (d) => !d.startTime || !d.endTime || d.startTime < d.endTime,
+  timeOrderMsg,
+);
+
+export const updateScheduleSchema = scheduleBaseSchema.partial().refine(
+  (d) => !d.startTime || !d.endTime || d.startTime < d.endTime,
+  timeOrderMsg,
+);
 
 // ─── Equipment ───────────────────────────────────────────────────────────────
 

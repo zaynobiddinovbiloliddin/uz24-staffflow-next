@@ -2,7 +2,11 @@ import { requireAuth } from '@/lib/auth-helpers';
 import { handleError, apiResponse } from '@/lib/api-response';
 import { applyRateLimit } from '@/lib/rate-limit';
 import { prisma } from '@/lib/prisma';
-import { NotFoundError } from '@/lib/errors';
+import { NotFoundError, ValidationError } from '@/lib/errors';
+
+const PHONE_REGEX = /^[+\d\s\-()]{7,20}$/;
+const AVATAR_PREFIX_REGEX = /^data:image\/(jpeg|png|webp|gif);base64,/;
+const MAX_AVATAR_BYTES = 150_000;
 
 export async function GET(req: Request) {
   try {
@@ -31,8 +35,25 @@ export async function PATCH(req: Request) {
     const body = await req.json();
 
     const updateData: Record<string, unknown> = {};
-    if (body.phone !== undefined) updateData.phone = body.phone || null;
-    if (body.avatar !== undefined) updateData.avatar = body.avatar || null;
+
+    if (body.phone !== undefined) {
+      if (body.phone && !PHONE_REGEX.test(body.phone)) {
+        throw new ValidationError("Noto'g'ri telefon raqam formati");
+      }
+      updateData.phone = body.phone || null;
+    }
+
+    if (body.avatar !== undefined) {
+      if (body.avatar) {
+        if (!AVATAR_PREFIX_REGEX.test(body.avatar)) {
+          throw new ValidationError('Avatar faqat JPEG, PNG, WebP yoki GIF formatida bo\'lishi kerak');
+        }
+        if (body.avatar.length > MAX_AVATAR_BYTES) {
+          throw new ValidationError('Avatar hajmi 100KB dan oshmasligi kerak');
+        }
+      }
+      updateData.avatar = body.avatar || null;
+    }
 
     const updated = await prisma.user.update({
       where: { id: session.user.id },

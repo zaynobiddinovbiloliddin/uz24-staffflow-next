@@ -31,6 +31,9 @@ const HTML = `<!DOCTYPE html>
 </html>`;
 
 export async function GET() {
+  if (process.env.NODE_ENV === 'production') {
+    return new NextResponse(null, { status: 404 });
+  }
   return new NextResponse(HTML, {
     headers: { 'Content-Type': 'text/html; charset=utf-8' },
   });

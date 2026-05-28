@@ -195,6 +195,9 @@ const spec = {
 };
 
 export async function GET() {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ message: 'Not found' }, { status: 404 });
+  }
   return NextResponse.json(spec, {
     headers: { 'Cache-Control': 'public, max-age=3600' },
   });

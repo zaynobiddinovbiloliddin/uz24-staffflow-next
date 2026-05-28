@@ -5,6 +5,7 @@ import { userService } from '@/services/user.service';
 import { updateUserSchema } from '@/lib/validations';
 import { ValidationError } from '@/lib/errors';
 import { prisma } from '@/lib/prisma';
+import { logAudit } from '@/lib/audit';
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -62,6 +63,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
           department: { select: { id: true, name: true } },
         },
       });
+      await logAudit(session.user.id, 'CHANGE_DEPT', 'User', params.id,
+        `Bo'lim o'zgartirildi → ${updated.department?.name ?? 'Tayinlanmagan'}`);
       return apiResponse.success(updated);
     }
 

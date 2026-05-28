@@ -8,8 +8,9 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', 'recharts'],
   },
   images: {
-    remotePatterns: [{ hostname: '**' }],
+    remotePatterns: [],
     localPatterns: [{ pathname: '/**' }],
+    unoptimized: true,
   },
   async headers() {
     return [
