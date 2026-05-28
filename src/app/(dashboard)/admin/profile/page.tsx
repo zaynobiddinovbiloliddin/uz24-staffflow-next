@@ -6,14 +6,12 @@ import { User, Phone, Building2, ClipboardList, Calendar, Edit2, Camera } from '
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
-export default function EmployeeProfilePage() {
+export default function AdminProfilePage() {
   const { data, mutate } = useSWR('/api/me', undefined);
   const { data: tasksData } = useSWR('/api/tasks', undefined);
-  const { data: schedData } = useSWR('/api/schedules', undefined);
 
   const me = data?.data;
   const tasks: any[] = tasksData?.data ?? [];
-  const schedules: any[] = schedData?.data ?? [];
 
   const [editModal, setEditModal] = useState(false);
   const [phone, setPhone] = useState('');
@@ -61,7 +59,6 @@ export default function EmployeeProfilePage() {
     try {
       const body: Record<string, unknown> = { phone: phone.trim() || null };
       if (avatarPreview) body.avatar = avatarPreview;
-
       const res = await fetch('/api/me', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -97,7 +94,6 @@ export default function EmployeeProfilePage() {
         </button>
       </div>
 
-      {/* Profile card */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
         <div className="flex items-center gap-5 mb-6">
           <div className="relative flex-shrink-0">
@@ -118,8 +114,8 @@ export default function EmployeeProfilePage() {
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">{me.fullName}</h2>
             <p className="text-gray-500">@{me.username}</p>
-            <span className={`inline-block mt-1 text-xs font-medium px-2 py-0.5 rounded-full ${me.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500'}`}>
-              {me.isActive ? 'Faol' : 'Nofaol'}
+            <span className="inline-block mt-1 text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+              Bo'lim Admini
             </span>
           </div>
         </div>
@@ -144,10 +140,9 @@ export default function EmployeeProfilePage() {
         </div>
       </div>
 
-      {/* Task stats */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
-          <ClipboardList size={16} /> Vazifa statistikasi
+          <ClipboardList size={16} /> Bo'lim vazifalar statistikasi
         </h3>
         <div className="grid grid-cols-4 gap-3">
           {[
@@ -165,40 +160,13 @@ export default function EmployeeProfilePage() {
         {taskStats.total > 0 && (
           <>
             <div className="mt-4 h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-green-500 rounded-full transition-all duration-700"
-                style={{ width: `${completionRate}%` }}
-              />
+              <div className="h-full bg-green-500 rounded-full transition-all duration-700" style={{ width: `${completionRate}%` }} />
             </div>
             <p className="text-xs text-gray-400 mt-1">{completionRate}% bajarildi</p>
           </>
         )}
       </div>
 
-      {/* Upcoming schedules */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
-          <Calendar size={16} /> Keyingi jadvallar
-        </h3>
-        {schedules.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-4">Jadval yo'q</p>
-        ) : (
-          <div className="space-y-2">
-            {schedules.slice(0, 5).map((s: any) => (
-              <div key={s.id} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-slate-700 last:border-0">
-                <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {format(new Date(s.date), 'dd.MM.yyyy')} — {s.shiftType}
-                  </p>
-                </div>
-                <span className="text-sm text-gray-500">{s.startTime}–{s.endTime}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Edit modal */}
       {editModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm modal-backdrop">
           <div className="bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm flex flex-col max-h-[90vh] overflow-hidden modal-enter">
@@ -206,9 +174,7 @@ export default function EmployeeProfilePage() {
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Profilni tahrirlash</h3>
               <button onClick={() => setEditModal(false)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400">✕</button>
             </div>
-
             <div className="flex-1 overflow-y-auto min-h-0 px-5 sm:px-6 py-4 space-y-4">
-              {/* Avatar upload */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Profil rasmi</label>
                 <div className="flex items-center gap-4">
@@ -220,19 +186,11 @@ export default function EmployeeProfilePage() {
                     </div>
                   )}
                   <div className="space-y-1">
-                    <button
-                      type="button"
-                      onClick={() => fileRef.current?.click()}
-                      className="btn-secondary text-sm py-2 px-3 flex items-center gap-1.5"
-                    >
+                    <button type="button" onClick={() => fileRef.current?.click()} className="btn-secondary text-sm py-2 px-3 flex items-center gap-1.5">
                       <Camera size={14} /> Rasm tanlash
                     </button>
                     {(avatarPreview ?? me.avatar) && (
-                      <button
-                        type="button"
-                        onClick={() => { setAvatarPreview(''); }}
-                        className="text-xs text-red-500 hover:text-red-600 px-1"
-                      >
+                      <button type="button" onClick={() => setAvatarPreview('')} className="text-xs text-red-500 hover:text-red-600 px-1">
                         Rasmni o'chirish
                       </button>
                     )}
@@ -240,26 +198,15 @@ export default function EmployeeProfilePage() {
                   <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
                 </div>
               </div>
-
-              {/* Phone */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Telefon raqam</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+998 90 123 45 67"
-                  className="input-base"
-                />
+                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+998 90 123 45 67" className="input-base" />
               </div>
             </div>
-
             <div className="px-5 sm:px-6 pb-5 sm:pb-6 flex gap-3 flex-shrink-0">
               <button onClick={() => setEditModal(false)} className="btn-secondary flex-1">Bekor</button>
               <button onClick={handleSave} disabled={saving} className="btn-primary flex-1">
-                {saving ? (
-                  <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saqlanmoqda...</>
-                ) : 'Saqlash'}
+                {saving ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saqlanmoqda...</> : 'Saqlash'}
               </button>
             </div>
           </div>

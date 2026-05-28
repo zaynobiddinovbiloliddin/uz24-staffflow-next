@@ -4,6 +4,7 @@ import { applyRateLimit } from '@/lib/rate-limit';
 import { userService } from '@/services/user.service';
 import { updateUserSchema } from '@/lib/validations';
 import { ValidationError } from '@/lib/errors';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -41,10 +42,26 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   try {
     applyRateLimit(req, 'write');
     const session = await requireAuth();
-    const { action } = await req.json();
+    const body = await req.json();
+    const { action } = body;
 
     if (action === 'toggle') {
       const updated = await userService.toggleActive(session.user, params.id);
+      return apiResponse.success(updated);
+    }
+
+    if (action === 'changeDept') {
+      if (!['SUPERADMIN', 'ADMIN'].includes(session.user.role)) {
+        throw new ValidationError("Ruxsat yo'q");
+      }
+      const updated = await prisma.user.update({
+        where: { id: params.id },
+        data: { departmentId: body.departmentId || null },
+        select: {
+          id: true, fullName: true, departmentId: true,
+          department: { select: { id: true, name: true } },
+        },
+      });
       return apiResponse.success(updated);
     }
 

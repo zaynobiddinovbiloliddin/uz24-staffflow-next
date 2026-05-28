@@ -5,6 +5,7 @@ import { Menu, Bell, LogOut, Sun, Moon, ChevronDown, User, Settings } from 'luci
 import { signOut } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import useSWR from 'swr';
+import { toast } from 'sonner';
 import { clsx } from 'clsx';
 import type { Session } from 'next-auth';
 
@@ -30,7 +31,7 @@ const NOTIF_HREF: Record<string, string> = {
 
 const PROFILE_HREF: Record<string, string> = {
   SUPERADMIN: '/superadmin/settings',
-  ADMIN:      '/admin/notifications',
+  ADMIN:      '/admin/profile',
   EMPLOYEE:   '/employee/profile',
 };
 
@@ -55,17 +56,26 @@ export function TopBar({ user, onMenuClick }: { user: Session['user']; onMenuCli
   }
 
   return (
-    <header className="h-16 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 flex items-center px-4 gap-4">
+    <header className="h-16 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 flex items-center px-3 sm:px-4 gap-2 sm:gap-3">
       {/* Mobile menu toggle */}
       <button
         onClick={onMenuClick}
-        className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+        className="lg:hidden p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors flex-shrink-0"
         aria-label="Menyu"
       >
         <Menu size={20} className="text-gray-600 dark:text-gray-400" />
       </button>
 
-      <div className="flex-1" />
+      {/* Mobile logo (only on small screens) */}
+      <div className="lg:hidden flex items-center gap-2 flex-1 min-w-0">
+        <div className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Uz24" className="w-full h-full object-contain" />
+        </div>
+        <span className="text-sm font-bold text-gray-900 dark:text-white truncate">StaffFlow</span>
+      </div>
+
+      <div className="hidden lg:block flex-1" />
 
       <div className="flex items-center gap-1">
         {/* Dark mode toggle */}
@@ -162,7 +172,29 @@ export function TopBar({ user, onMenuClick }: { user: Session['user']; onMenuCli
                   <div className="border-t border-gray-100 dark:border-slate-700 my-1" />
 
                   <button
-                    onClick={() => signOut({ callbackUrl: '/login' })}
+                    onClick={() => {
+                      setShowUser(false);
+                      toast.custom((t) => (
+                        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl p-4 w-80 modal-enter">
+                          <p className="font-semibold text-gray-900 dark:text-white text-sm">Tizimdan chiqmoqchimisiz?</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Barcha ochiq sahifalar yopiladi</p>
+                          <div className="flex gap-2 mt-3">
+                            <button
+                              onClick={() => toast.dismiss(t)}
+                              className="flex-1 py-2 rounded-xl border border-gray-200 dark:border-slate-600 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                            >
+                              Bekor
+                            </button>
+                            <button
+                              onClick={() => { toast.dismiss(t); signOut({ callbackUrl: '/login' }); }}
+                              className="flex-1 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors"
+                            >
+                              Chiqish
+                            </button>
+                          </div>
+                        </div>
+                      ), { duration: 8000 });
+                    }}
                     className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                   >
                     <LogOut size={15} />

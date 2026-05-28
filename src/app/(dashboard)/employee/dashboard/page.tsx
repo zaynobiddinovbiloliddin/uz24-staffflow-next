@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import useSWR from 'swr';
 import { useSession } from 'next-auth/react';
-import { ClipboardList, Calendar, Bell, CheckCircle2, Clock, ArrowRight, AlertCircle } from 'lucide-react';
+import { ClipboardList, Calendar, Bell, CheckCircle2, Clock, ArrowRight, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -21,6 +21,7 @@ export default function EmployeeDashboard() {
   const pending    = myTasks.filter((t: any) => t.status === 'PENDING').length;
   const inProgress = myTasks.filter((t: any) => t.status === 'IN_PROGRESS').length;
   const completed  = myTasks.filter((t: any) => t.status === 'COMPLETED').length;
+  const cancelled  = myTasks.filter((t: any) => t.status === 'CANCELLED').length;
 
   const todaySchedule = mySchedules.filter((s: any) => {
     const d = new Date(s.date);
@@ -28,10 +29,10 @@ export default function EmployeeDashboard() {
   });
 
   const stats = [
-    { label: 'Jami',       value: myTasks.length, icon: <ClipboardList size={18} />, color: 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-gray-300' },
-    { label: 'Kutilmoqda', value: pending,         icon: <Clock size={18} />,         color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' },
-    { label: 'Jarayonda',  value: inProgress,      icon: <ClipboardList size={18} />, color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
-    { label: 'Bajarildi',  value: completed,       icon: <CheckCircle2 size={18} />,  color: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' },
+    { label: 'Kutilmoqda',     value: pending,    icon: <Clock size={18} />,       color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',  href: '/employee/tasks?status=PENDING'    },
+    { label: 'Jarayonda',      value: inProgress, icon: <ClipboardList size={18}/>, color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',      href: '/employee/tasks?status=IN_PROGRESS'},
+    { label: 'Bajarildi',      value: completed,  icon: <CheckCircle2 size={18} />,color: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',  href: '/employee/tasks?status=COMPLETED'  },
+    { label: 'Bekor qilingan', value: cancelled,  icon: <XCircle size={18} />,     color: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',          href: '/employee/tasks?status=CANCELLED'  },
   ];
 
   const activeTasks = myTasks.filter((t: any) => ['PENDING', 'IN_PROGRESS'].includes(t.status));
@@ -52,7 +53,7 @@ export default function EmployeeDashboard() {
         {stats.map((s) => (
           <Link
             key={s.label}
-            href="/employee/tasks"
+            href={s.href}
             className="group bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700
                        hover:border-blue-200 dark:hover:border-blue-700 hover:shadow-md transition-all duration-200 block"
           >

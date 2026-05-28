@@ -1,15 +1,23 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import useSWR from 'swr';
 import { Plus, Edit2, Trash2, Clock } from 'lucide-react';
-import ConfirmModal from '@/components/ui/ConfirmModal';
 import { format, startOfWeek, addDays } from 'date-fns';
+import { toast } from 'sonner';
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const ConfirmModal = dynamic(() => import('@/components/ui/ConfirmModal'), { ssr: false });
+
 const SHIFTS = ['Kunduzgi', 'Kechki', 'Tungi', 'Qisqartirilgan'];
 const EMPTY = { userId: '', date: '', startTime: '09:00', endTime: '18:00', shiftType: 'Kunduzgi', note: '' };
 const DAY_NAMES = ['Dush', 'Sesh', 'Chor', 'Pay', 'Juma', 'Shan', 'Yak'];
+const SHIFT_COLORS: Record<string, string> = {
+  Kunduzgi:       'bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800 text-blue-700 dark:text-blue-300',
+  Kechki:         'bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800 text-purple-700 dark:text-purple-300',
+  Tungi:          'bg-slate-100 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300',
+  Qisqartirilgan: 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800 text-green-700 dark:text-green-300',
+};
 
 export default function AdminSchedulesPage() {
   const today = new Date();
@@ -19,103 +27,158 @@ export default function AdminSchedulesPage() {
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [confirmDlg, setConfirmDlg] = useState<{ open: boolean; message: string; onConfirm: () => void }>({ open: false, message: '', onConfirm: () => {} });
+  const [confirmDlg, setConfirmDlg] = useState<{ open: boolean; id: string }>({ open: false, id: '' });
 
   const from = format(weekStart, 'yyyy-MM-dd');
   const to = format(addDays(weekStart, 6), 'yyyy-MM-dd');
-  const { data, mutate } = useSWR(`/api/schedules?from=${from}&to=${to}`, fetcher);
-  const { data: usersData } = useSWR('/api/users?role=EMPLOYEE', fetcher);
+  const { data, mutate } = useSWR(`/api/schedules?from=${from}&to=${to}`, undefined);
+  const { data: usersData } = useSWR('/api/users?role=EMPLOYEE', undefined);
   const schedules: any[] = data?.data ?? [];
   const users = usersData?.data ?? [];
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
-  function openCreate(date?: Date) { setEditing(null); setForm({ ...EMPTY, date: date ? format(date, 'yyyy-MM-dd') : '' }); setError(''); setModal(true); }
-  function openEdit(s: any) { setEditing(s); setForm({ userId: s.userId, date: format(new Date(s.date), 'yyyy-MM-dd'), startTime: s.startTime, endTime: s.endTime, shiftType: s.shiftType, note: s.note ?? '' }); setError(''); setModal(true); }
+  function openCreate(date?: Date) {
+    setEditing(null);
+    setForm({ ...EMPTY, date: date ? format(date, 'yyyy-MM-dd') : '' });
+    setError('');
+    setModal(true);
+  }
+  function openEdit(s: any) {
+    setEditing(s);
+    setForm({
+      userId: s.userId,
+      date: format(new Date(s.date), 'yyyy-MM-dd'),
+      startTime: s.startTime,
+      endTime: s.endTime,
+      shiftType: s.shiftType,
+      note: s.note ?? '',
+    });
+    setError('');
+    setModal(true);
+  }
 
   async function handleSave() {
+    if (!form.userId) { setError('Xodimni tanlang'); return; }
+    if (!form.date) { setError('Sanani kiriting'); return; }
     setSaving(true); setError('');
     try {
       const url = editing ? `/api/schedules/${editing.id}` : '/api/schedules';
-      const res = await fetch(url, { method: editing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+      const res = await fetch(url, {
+        method: editing ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
       const d = await res.json();
-      if (!res.ok) { setError(d.message); return; }
-      setModal(false); mutate();
-    } catch { setError('Xato'); } finally { setSaving(false); }
+      if (!res.ok) { setError(d.message ?? 'Xato'); return; }
+      toast.success(editing ? 'Jadval yangilandi' : 'Jadval qo\'shildi');
+      setModal(false);
+      mutate();
+    } catch { setError('Xato yuz berdi'); } finally { setSaving(false); }
   }
 
-  function handleDelete(id: string) {
-    setConfirmDlg({
-      open: true,
-      message: "Ish jadvalini o'chirmoqchimisiz?",
-      onConfirm: async () => {
-        setConfirmDlg((d) => ({ ...d, open: false }));
-        await fetch(`/api/schedules/${id}`, { method: 'DELETE' });
-        mutate();
-      },
-    });
+  async function handleDelete() {
+    const id = confirmDlg.id;
+    setConfirmDlg({ open: false, id: '' });
+    const res = await fetch(`/api/schedules/${id}`, { method: 'DELETE' });
+    if (res.ok || res.status === 204) {
+      toast.success("Jadval o'chirildi");
+      mutate();
+    } else {
+      toast.error("O'chirishda xato");
+    }
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 page-content">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Ish jadvali</h1>
           <p className="text-sm text-gray-500 mt-0.5">{from} — {to}</p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => setWeekStart(addDays(weekStart, -7))} className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-sm hover:bg-gray-50 dark:hover:bg-slate-700">← Oldingi</button>
-          <button onClick={() => setWeekStart(startOfWeek(today, { weekStartsOn: 1 }))} className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-sm hover:bg-gray-50 dark:hover:bg-slate-700">Bugun</button>
-          <button onClick={() => setWeekStart(addDays(weekStart, 7))} className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-sm hover:bg-gray-50 dark:hover:bg-slate-700">Keyingi →</button>
-          <button onClick={() => openCreate()} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg"><Plus size={16} /> Qo'shish</button>
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => setWeekStart(addDays(weekStart, -7))}
+            className="btn-secondary px-3 py-2 text-sm"
+          >← Oldingi</button>
+          <button
+            onClick={() => setWeekStart(startOfWeek(today, { weekStartsOn: 1 }))}
+            className="btn-secondary px-3 py-2 text-sm"
+          >Bugun</button>
+          <button
+            onClick={() => setWeekStart(addDays(weekStart, 7))}
+            className="btn-secondary px-3 py-2 text-sm"
+          >Keyingi →</button>
+          <button onClick={() => openCreate()} className="btn-primary flex items-center gap-1.5">
+            <Plus size={16} /> Qo'shish
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-2">
-        {weekDays.map((day, idx) => {
-          const dayKey = format(day, 'yyyy-MM-dd');
-          const daySched = schedules.filter((s) => format(new Date(s.date), 'yyyy-MM-dd') === dayKey);
-          const isToday = dayKey === format(today, 'yyyy-MM-dd');
-          return (
-            <div key={dayKey} className="min-h-[100px]">
-              <div className={`text-center py-2 rounded-lg text-xs font-semibold mb-1 ${isToday ? 'bg-blue-600 text-white' : 'bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-400'}`}>
-                <div>{DAY_NAMES[idx]}</div>
-                <div className="text-base font-bold">{format(day, 'd')}</div>
-              </div>
-              <div className="space-y-1">
-                {daySched.map((s: any) => (
-                  <div key={s.id} className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded p-1.5 text-xs">
-                    <p className="font-medium text-blue-700 dark:text-blue-300 truncate">{s.user?.fullName}</p>
-                    <p className="text-blue-500">{s.startTime}–{s.endTime}</p>
-                    <div className="flex gap-1 mt-0.5">
-                      <button onClick={() => openEdit(s)} className="text-blue-400 hover:text-blue-600"><Edit2 size={10} /></button>
-                      <button onClick={() => handleDelete(s.id)} className="text-red-400 hover:text-red-600"><Trash2 size={10} /></button>
+      <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+        <div className="grid grid-cols-7 gap-2 min-w-[560px]">
+          {weekDays.map((day, idx) => {
+            const dayKey = format(day, 'yyyy-MM-dd');
+            const daySched = schedules.filter((s) => format(new Date(s.date), 'yyyy-MM-dd') === dayKey);
+            const isToday = dayKey === format(today, 'yyyy-MM-dd');
+            return (
+              <div key={dayKey} className="min-h-[100px]">
+                <div className={`text-center py-2 rounded-lg text-xs font-semibold mb-1 ${isToday ? 'bg-blue-600 text-white' : 'bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-400'}`}>
+                  <div>{DAY_NAMES[idx]}</div>
+                  <div className="text-base font-bold">{format(day, 'd')}</div>
+                </div>
+                <div className="space-y-1">
+                  {daySched.map((s: any) => (
+                    <div key={s.id} className={`border rounded p-1.5 text-xs ${SHIFT_COLORS[s.shiftType] ?? SHIFT_COLORS.Kunduzgi}`}>
+                      <p className="font-medium truncate">{s.user?.fullName}</p>
+                      <p className="opacity-75 text-xs">{s.startTime}–{s.endTime}</p>
+                      <div className="flex gap-1 mt-0.5">
+                        <button onClick={() => openEdit(s)} className="opacity-60 hover:opacity-100"><Edit2 size={10} /></button>
+                        <button onClick={() => setConfirmDlg({ open: true, id: s.id })} className="text-red-400 hover:text-red-600"><Trash2 size={10} /></button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-                <button onClick={() => openCreate(day)} className="w-full py-1 rounded border border-dashed border-gray-200 dark:border-slate-700 text-gray-300 hover:border-blue-300 hover:text-blue-400 transition-colors">
-                  <Plus size={11} className="mx-auto" />
-                </button>
+                  ))}
+                  <button
+                    onClick={() => openCreate(day)}
+                    className="w-full py-1 rounded border border-dashed border-gray-200 dark:border-slate-700 text-gray-300 hover:border-blue-300 hover:text-blue-400 transition-colors"
+                  >
+                    <Plus size={11} className="mx-auto" />
+                  </button>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 divide-y divide-gray-50 dark:divide-slate-700/50 overflow-hidden">
-        {schedules.length === 0 && data && <p className="px-4 py-8 text-center text-sm text-gray-400">Bu hafta jadval yo'q</p>}
+        {schedules.length === 0 && data && (
+          <p className="px-4 py-8 text-center text-sm text-gray-400">Bu hafta jadval yo'q</p>
+        )}
         {schedules.map((s: any) => (
-          <div key={s.id} className="flex items-center justify-between px-4 py-3">
+          <div key={s.id} className="list-row flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 text-sm font-semibold flex items-center justify-center">{s.user?.fullName?.[0]}</div>
+              {s.user?.avatar ? (
+                <img src={s.user.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
+              ) : (
+                <div className={`w-8 h-8 rounded-full text-sm font-semibold flex items-center justify-center border ${SHIFT_COLORS[s.shiftType] ?? SHIFT_COLORS.Kunduzgi}`}>
+                  {s.user?.fullName?.[0]}
+                </div>
+              )}
               <div>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">{s.user?.fullName}</p>
                 <p className="text-xs text-gray-400">{format(new Date(s.date), 'dd.MM.yyyy')} — {s.shiftType}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1 text-sm text-gray-500 hidden sm:flex"><Clock size={13} />{s.startTime}–{s.endTime}</div>
-              <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400 hover:text-blue-600"><Edit2 size={14} /></button>
-              <button onClick={() => handleDelete(s.id)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-600"><Trash2 size={14} /></button>
+              <div className="hidden sm:flex items-center gap-1 text-sm text-gray-500">
+                <Clock size={13} />{s.startTime}–{s.endTime}
+              </div>
+              <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400 hover:text-blue-600 transition-colors">
+                <Edit2 size={14} />
+              </button>
+              <button onClick={() => setConfirmDlg({ open: true, id: s.id })} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-600 transition-colors">
+                <Trash2 size={14} />
+              </button>
             </div>
           </div>
         ))}
@@ -123,48 +186,96 @@ export default function AdminSchedulesPage() {
 
       <ConfirmModal
         open={confirmDlg.open}
-        message={confirmDlg.message}
-        onConfirm={confirmDlg.onConfirm}
-        onCancel={() => setConfirmDlg((d) => ({ ...d, open: false }))}
+        message="Ish jadvalini o'chirishni tasdiqlaysizmi?"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDlg({ open: false, id: '' })}
       />
 
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-5">{editing ? 'Jadval tahrirlash' : 'Yangi jadval'}</h3>
-            <div className="space-y-3">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm modal-backdrop">
+          <div className="bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md flex flex-col max-h-[90vh] overflow-hidden modal-enter">
+            <div className="flex items-center justify-between px-5 sm:px-6 pt-5 sm:pt-6 pb-4 border-b border-gray-100 dark:border-slate-700 flex-shrink-0">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {editing ? 'Jadval tahrirlash' : 'Yangi jadval'}
+              </h3>
+              <button onClick={() => setModal(false)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400">✕</button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto min-h-0 px-5 sm:px-6 py-4 space-y-4">
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Xodim *</label>
-                <select value={form.userId} onChange={(e) => setForm((f) => ({ ...f, userId: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Xodim *</label>
+                <select
+                  value={form.userId}
+                  onChange={(e) => setForm((f) => ({ ...f, userId: e.target.value }))}
+                  className="select-base"
+                >
                   <option value="">— Tanlang —</option>
                   {users.map((u: any) => <option key={u.id} value={u.id}>{u.fullName}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Sana *</label>
-                <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Sana *</label>
+                <input
+                  type="date"
+                  value={form.date}
+                  onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+                  className="input-base"
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Boshlanish</label>
-                  <input type="time" value={form.startTime} onChange={(e) => setForm((f) => ({ ...f, startTime: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none" />
+                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Boshlanish</label>
+                  <input
+                    type="time"
+                    value={form.startTime}
+                    onChange={(e) => setForm((f) => ({ ...f, startTime: e.target.value }))}
+                    className="input-base"
+                  />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tugash</label>
-                  <input type="time" value={form.endTime} onChange={(e) => setForm((f) => ({ ...f, endTime: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none" />
+                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Tugash</label>
+                  <input
+                    type="time"
+                    value={form.endTime}
+                    onChange={(e) => setForm((f) => ({ ...f, endTime: e.target.value }))}
+                    className="input-base"
+                  />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Smena turi</label>
-                <select value={form.shiftType} onChange={(e) => setForm((f) => ({ ...f, shiftType: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none">
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Smena turi</label>
+                <select
+                  value={form.shiftType}
+                  onChange={(e) => setForm((f) => ({ ...f, shiftType: e.target.value }))}
+                  className="select-base"
+                >
                   {SHIFTS.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Izoh</label>
+                <input
+                  type="text"
+                  value={form.note}
+                  onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
+                  placeholder="Ixtiyoriy..."
+                  className="input-base"
+                />
+              </div>
+              {error && (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3">
+                  <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                </div>
+              )}
             </div>
-            {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setModal(false)} className="flex-1 py-2.5 rounded-lg border border-gray-200 dark:border-slate-600 text-sm text-gray-600 dark:text-gray-400">Bekor</button>
-              <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-medium">{saving ? 'Saqlanmoqda...' : 'Saqlash'}</button>
+
+            <div className="px-5 sm:px-6 py-4 border-t border-gray-100 dark:border-slate-700 flex gap-3 flex-shrink-0">
+              <button onClick={() => setModal(false)} className="btn-secondary flex-1">Bekor</button>
+              <button onClick={handleSave} disabled={saving} className="btn-primary flex-1">
+                {saving ? (
+                  <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saqlanmoqda...</>
+                ) : 'Saqlash'}
+              </button>
             </div>
           </div>
         </div>

@@ -63,7 +63,7 @@ export const userRepo = {
       data: data as any,
       select: {
         id: true, fullName: true, username: true, role: true,
-        position: true, phone: true, isActive: true,
+        position: true, phone: true, avatar: true, isActive: true,
         department: { select: { id: true, name: true } }, updatedAt: true,
       },
     });

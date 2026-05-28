@@ -41,11 +41,11 @@ export default function AuditLogsPage() {
       </div>
 
       <div className="flex gap-3 flex-wrap">
-        <select value={entity} onChange={(e) => { setEntity(e.target.value); setPage(1); }} className="px-3 py-2.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none">
+        <select value={entity} onChange={(e) => { setEntity(e.target.value); setPage(1); }} className="select-base w-auto">
           <option value="">Barcha ob'ektlar</option>
           {entities.map((e) => <option key={e} value={e}>{e}</option>)}
         </select>
-        <select value={action} onChange={(e) => { setAction(e.target.value); setPage(1); }} className="px-3 py-2.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none">
+        <select value={action} onChange={(e) => { setAction(e.target.value); setPage(1); }} className="select-base w-auto">
           <option value="">Barcha amallar</option>
           {actions.map((a) => <option key={a} value={a}>{a}</option>)}
         </select>

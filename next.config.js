@@ -5,9 +5,11 @@ const nextConfig = {
   ...(isDocker && { output: 'standalone' }),
   experimental: {
     serverComponentsExternalPackages: ['bcryptjs'],
+    optimizePackageImports: ['lucide-react', 'recharts'],
   },
   images: {
     remotePatterns: [{ hostname: '**' }],
+    localPatterns: [{ pathname: '/**' }],
   },
   async headers() {
     return [

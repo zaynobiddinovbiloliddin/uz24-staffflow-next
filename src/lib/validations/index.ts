@@ -23,6 +23,7 @@ export const updateUserSchema = z.object({
   telegramId:   z.string().max(50).nullable().optional(),
   password:     z.string().min(6).max(100).optional(),
   isActive:     z.boolean().optional(),
+  avatar:       z.string().max(200000).nullable().optional(),
 });
 
 // ─── Task ────────────────────────────────────────────────────────────────────
@@ -37,7 +38,8 @@ export const createTaskSchema = z.object({
 });
 
 export const updateTaskSchema = createTaskSchema.partial().extend({
-  status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
+  status:       z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
+  cancelReason: z.string().max(500).optional(),
 });
 
 // ─── Department ───────────────────────────────────────────────────────────────

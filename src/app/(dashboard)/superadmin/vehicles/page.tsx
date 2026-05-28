@@ -118,44 +118,50 @@ export default function VehiclesPage() {
       />
 
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-5">{editing ? 'Tahrirlash' : 'Yangi transport'}</h3>
-            <div className="space-y-3">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm modal-backdrop">
+          <div className="bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md flex flex-col max-h-[90vh] overflow-hidden modal-enter">
+            <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 border-b border-gray-100 dark:border-slate-700 flex-shrink-0">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white">{editing ? 'Tahrirlash' : 'Yangi transport'}</h3>
+            </div>
+            <div className="flex-1 overflow-y-auto min-h-0 px-5 sm:px-6 py-4 space-y-3">
               {[{ label: 'Nom *', key: 'name', placeholder: 'Nexia 3' }, { label: 'Davlat raqami *', key: 'plateNumber', placeholder: '01 A 001 AA' }, { label: 'Turi *', key: 'type', placeholder: 'Sedan, Jeep...' }, { label: 'Yoqilg\'i', key: 'fuelType', placeholder: 'Benzin, Gaz' }, { label: 'Probeg (km)', key: 'mileage', placeholder: '50000' }].map(({ label, key, placeholder }) => (
                 <div key={key}>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{label}</label>
+                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">{label}</label>
                   <input value={(form as any)[key]} onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))} placeholder={placeholder} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
               ))}
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Holat</label>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Holat</label>
                 <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none">
                   {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </div>
+              {error && <p className="text-sm text-red-500">{error}</p>}
             </div>
-            {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setModal(false)} className="flex-1 py-2.5 rounded-lg border border-gray-200 dark:border-slate-600 text-sm text-gray-600 dark:text-gray-400">Bekor</button>
-              <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-medium">{saving ? 'Saqlanmoqda...' : 'Saqlash'}</button>
+            <div className="flex gap-3 px-5 sm:px-6 pb-5 sm:pb-6 pt-3 flex-shrink-0">
+              <button onClick={() => setModal(false)} className="btn-secondary flex-1">Bekor</button>
+              <button onClick={handleSave} disabled={saving} className="btn-primary flex-1">{saving ? 'Saqlanmoqda...' : 'Saqlash'}</button>
             </div>
           </div>
         </div>
       )}
 
       {assignModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Transport tayinlash</h3>
-            <p className="text-sm text-gray-500 mb-4">{assignModal.name} — {assignModal.plateNumber}</p>
-            <select value={assignUserId} onChange={(e) => setAssignUserId(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none mb-4">
-              <option value="">— Bo'shatish —</option>
-              {users.map((u: any) => <option key={u.id} value={u.id}>{u.fullName}</option>)}
-            </select>
-            <div className="flex gap-3">
-              <button onClick={() => setAssignModal(null)} className="flex-1 py-2.5 rounded-lg border border-gray-200 dark:border-slate-600 text-sm text-gray-600 dark:text-gray-400">Bekor</button>
-              <button onClick={handleAssign} className="flex-1 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">Saqlash</button>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm modal-backdrop">
+          <div className="bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm flex flex-col max-h-[90vh] overflow-hidden modal-enter">
+            <div className="px-5 sm:px-6 pt-5 pb-4 border-b border-gray-100 dark:border-slate-700">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white">Transport tayinlash</h3>
+              <p className="text-sm text-gray-500 mt-0.5">{assignModal.name} — {assignModal.plateNumber}</p>
+            </div>
+            <div className="px-5 sm:px-6 py-4">
+              <select value={assignUserId} onChange={(e) => setAssignUserId(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none">
+                <option value="">— Bo'shatish —</option>
+                {users.map((u: any) => <option key={u.id} value={u.id}>{u.fullName}</option>)}
+              </select>
+            </div>
+            <div className="flex gap-3 px-5 sm:px-6 pb-5 sm:pb-6">
+              <button onClick={() => setAssignModal(null)} className="btn-secondary flex-1">Bekor</button>
+              <button onClick={handleAssign} className="btn-primary flex-1">Saqlash</button>
             </div>
           </div>
         </div>

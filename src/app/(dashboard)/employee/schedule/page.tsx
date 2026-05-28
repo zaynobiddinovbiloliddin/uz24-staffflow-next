@@ -55,29 +55,31 @@ export default function EmployeeSchedulePage() {
         </div>
       )}
 
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
         <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700 text-sm font-medium text-gray-700 dark:text-gray-300">
           Bu hafta
         </div>
-        <div className="grid grid-cols-7">
-          {weekDays.map((day, idx) => {
-            const daySched = schedules.filter((s) => isSameDay(new Date(s.date), day));
-            const isToday = isSameDay(day, today);
-            return (
-              <div key={idx} className={`p-2 border-r border-gray-50 dark:border-slate-700 last:border-0 ${isToday ? 'bg-blue-50 dark:bg-blue-900/10' : ''}`}>
-                <p className={`text-xs font-semibold text-center mb-2 ${isToday ? 'text-blue-600' : 'text-gray-500'}`}>
-                  <span className="block">{DAY_NAMES[idx].slice(0, 3)}</span>
-                  <span className={`block text-base ${isToday ? 'text-blue-600' : 'text-gray-800 dark:text-gray-200'}`}>{format(day, 'd')}</span>
-                </p>
-                {daySched.map((s: any) => (
-                  <div key={s.id} className={`text-xs px-1.5 py-1 rounded border mb-1 ${SHIFT_COLORS[s.shiftType] ?? SHIFT_COLORS.Kunduzgi}`}>
-                    <p className="font-medium">{s.startTime}</p>
-                    <p className="opacity-70">—{s.endTime}</p>
-                  </div>
-                ))}
-              </div>
-            );
-          })}
+        <div className="overflow-x-auto">
+          <div className="grid grid-cols-7 min-w-[420px]">
+            {weekDays.map((day, idx) => {
+              const daySched = schedules.filter((s) => isSameDay(new Date(s.date), day));
+              const isToday = isSameDay(day, today);
+              return (
+                <div key={idx} className={`p-2 border-r border-gray-50 dark:border-slate-700 last:border-0 ${isToday ? 'bg-blue-50 dark:bg-blue-900/10' : ''}`}>
+                  <p className={`text-xs font-semibold text-center mb-2 ${isToday ? 'text-blue-600' : 'text-gray-500'}`}>
+                    <span className="block">{DAY_NAMES[idx].slice(0, 3)}</span>
+                    <span className={`block text-base ${isToday ? 'text-blue-600' : 'text-gray-800 dark:text-gray-200'}`}>{format(day, 'd')}</span>
+                  </p>
+                  {daySched.map((s: any) => (
+                    <div key={s.id} className={`text-xs px-1.5 py-1 rounded border mb-1 ${SHIFT_COLORS[s.shiftType] ?? SHIFT_COLORS.Kunduzgi}`}>
+                      <p className="font-medium">{s.startTime}</p>
+                      <p className="opacity-70">—{s.endTime}</p>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 

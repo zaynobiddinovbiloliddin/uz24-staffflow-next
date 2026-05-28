@@ -104,6 +104,7 @@ model Task {
   status       TaskStatus   @default(PENDING)
   priority     TaskPriority @default(MEDIUM)
   deadline     DateTime?
+  cancelReason String?      @db.VarChar(500)
   assignedToId String?
   createdById  String
   departmentId String?

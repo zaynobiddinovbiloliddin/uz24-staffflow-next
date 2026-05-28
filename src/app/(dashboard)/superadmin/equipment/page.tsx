@@ -96,7 +96,49 @@ export default function EquipmentPage() {
         </select>
       </div>
 
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
+      {/* Mobile cards */}
+      <div className="sm:hidden space-y-3">
+        {!data && Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-28 bg-white dark:bg-slate-800 rounded-xl border animate-pulse" />
+        ))}
+        {items.map((item: any) => (
+          <div key={item.id} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/30 text-orange-600 flex items-center justify-center flex-shrink-0">
+                <Camera size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900 dark:text-white truncate">{item.name}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{item.type}</p>
+              </div>
+              <span className={`text-xs font-medium px-2 py-1 rounded-full flex-shrink-0 ${STATUS_COLORS[item.status]}`}>
+                {STATUS_LABELS[item.status]}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-400 mb-3 flex-wrap">
+              {item.serialNumber && <span>S/N: {item.serialNumber}</span>}
+              {item.assignedTo && <span>👤 {item.assignedTo.fullName}</span>}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setAssignModal(item); setAssignUserId(item.assignedToId ?? ''); }}
+                className="flex-1 py-2 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400 text-xs font-medium hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
+              >
+                Tayinlash
+              </button>
+              <button onClick={() => openEdit(item)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400 hover:text-blue-600 transition-colors">
+                <Edit2 size={15} />
+              </button>
+              <button onClick={() => handleDelete(item.id, item.name)} className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-600 transition-colors">
+                <Trash2 size={15} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden sm:block bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50">
@@ -143,48 +185,54 @@ export default function EquipmentPage() {
       />
 
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-5">{editing ? 'Tahrirlash' : 'Yangi uskuna'}</h3>
-            <div className="space-y-3">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm modal-backdrop">
+          <div className="bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md flex flex-col max-h-[90vh] overflow-hidden modal-enter">
+            <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 border-b border-gray-100 dark:border-slate-700 flex-shrink-0">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white">{editing ? 'Tahrirlash' : 'Yangi uskuna'}</h3>
+            </div>
+            <div className="flex-1 overflow-y-auto min-h-0 px-5 sm:px-6 py-4 space-y-3">
               {[{ label: 'Nom *', key: 'name', placeholder: 'Kamera nomi' }, { label: 'Turi *', key: 'type', placeholder: 'Kamera, Mikrofon...' }, { label: 'Serial raqam', key: 'serialNumber', placeholder: 'SN-001' }, { label: 'Holati', key: 'condition', placeholder: 'Yaxshi' }].map(({ label, key, placeholder }) => (
                 <div key={key}>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{label}</label>
+                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">{label}</label>
                   <input value={(form as any)[key]} onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))} placeholder={placeholder} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
               ))}
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Holat</label>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Holat</label>
                 <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none">
                   {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Izoh</label>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Izoh</label>
                 <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none resize-none" />
               </div>
+              {error && <p className="text-sm text-red-500">{error}</p>}
             </div>
-            {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setModal(false)} className="flex-1 py-2.5 rounded-lg border border-gray-200 dark:border-slate-600 text-sm text-gray-600 dark:text-gray-400">Bekor</button>
-              <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-medium">{saving ? 'Saqlanmoqda...' : 'Saqlash'}</button>
+            <div className="flex gap-3 px-5 sm:px-6 pb-5 sm:pb-6 pt-3 flex-shrink-0">
+              <button onClick={() => setModal(false)} className="btn-secondary flex-1">Bekor</button>
+              <button onClick={handleSave} disabled={saving} className="btn-primary flex-1">{saving ? 'Saqlanmoqda...' : 'Saqlash'}</button>
             </div>
           </div>
         </div>
       )}
 
       {assignModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Uskuna tayinlash</h3>
-            <p className="text-sm text-gray-500 mb-4">{assignModal.name}</p>
-            <select value={assignUserId} onChange={(e) => setAssignUserId(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4">
-              <option value="">— Bo'shatish —</option>
-              {users.map((u: any) => <option key={u.id} value={u.id}>{u.fullName}</option>)}
-            </select>
-            <div className="flex gap-3">
-              <button onClick={() => setAssignModal(null)} className="flex-1 py-2.5 rounded-lg border border-gray-200 dark:border-slate-600 text-sm text-gray-600 dark:text-gray-400">Bekor</button>
-              <button onClick={handleAssign} disabled={busyAssign} className="flex-1 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-medium flex items-center justify-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm modal-backdrop">
+          <div className="bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm flex flex-col max-h-[90vh] overflow-hidden modal-enter">
+            <div className="px-5 sm:px-6 pt-5 pb-4 border-b border-gray-100 dark:border-slate-700">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white">Uskuna tayinlash</h3>
+              <p className="text-sm text-gray-500 mt-0.5">{assignModal.name}</p>
+            </div>
+            <div className="px-5 sm:px-6 py-4">
+              <select value={assignUserId} onChange={(e) => setAssignUserId(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">— Bo'shatish —</option>
+                {users.map((u: any) => <option key={u.id} value={u.id}>{u.fullName}</option>)}
+              </select>
+            </div>
+            <div className="flex gap-3 px-5 sm:px-6 pb-5 sm:pb-6">
+              <button onClick={() => setAssignModal(null)} className="btn-secondary flex-1">Bekor</button>
+              <button onClick={handleAssign} disabled={busyAssign} className="btn-primary flex-1 flex items-center justify-center gap-2">
                 {busyAssign && <Loader2 size={14} className="animate-spin" />}
                 Saqlash
               </button>

@@ -1,33 +1,51 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import useSWR from 'swr';
 import { Users, ClipboardList, Building2, Camera, Car, TrendingUp } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { SkeletonChart } from '@/components/ui/Skeleton';
+
+// Recharts (~300 KB) faqat kerak bo'lganda yuklanadi
+const AnalyticsCharts = dynamic(() => import('@/components/charts/AnalyticsCharts'), {
+  loading: () => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {[0, 1].map((i) => (
+        <div key={i} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
+          <div className="h-4 w-40 bg-gray-200 dark:bg-slate-700 rounded animate-pulse mb-4" />
+          <SkeletonChart />
+        </div>
+      ))}
+    </div>
+  ),
+  ssr: false,
+});
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function AnalyticsPage() {
-  const { data: ov } = useSWR('/api/analytics?type=overview', fetcher, { refreshInterval: 30000 });
+  const { data: ov }    = useSWR('/api/analytics?type=overview',    fetcher, { refreshInterval: 30000 });
   const { data: chart } = useSWR('/api/analytics?type=tasks-chart', fetcher, { refreshInterval: 60000 });
   const { data: depts } = useSWR('/api/analytics?type=departments', fetcher, { refreshInterval: 60000 });
 
-  const overview = ov?.data;
+  const overview  = ov?.data;
   const chartData = chart?.data ?? [];
-  const deptData = depts?.data ?? [];
+  const deptData  = depts?.data ?? [];
 
-  const taskPieData = overview ? [
-    { name: 'Bajarildi', value: overview.tasks.completed, color: '#10b981' },
-    { name: 'Jarayonda', value: overview.tasks.inProgress, color: '#3b82f6' },
-    { name: 'Kutilmoqda', value: overview.tasks.pending, color: '#f59e0b' },
-  ] : [];
+  const taskPieData = overview
+    ? [
+        { name: 'Bajarildi',  value: overview.tasks.completed,  color: '#10b981' },
+        { name: 'Jarayonda',  value: overview.tasks.inProgress, color: '#3b82f6' },
+        { name: 'Kutilmoqda', value: overview.tasks.pending,    color: '#f59e0b' },
+      ]
+    : [];
 
   const kpis = [
-    { title: 'Faol xodimlar', value: overview?.users.active ?? '—', sub: `Jami: ${overview?.users.total ?? 0}`, icon: <Users size={20} />, color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30' },
-    { title: 'Jami vazifalar', value: overview?.tasks.total ?? '—', sub: `Bajarildi: ${overview?.tasks.completed ?? 0}`, icon: <ClipboardList size={20} />, color: 'text-green-600 bg-green-100 dark:bg-green-900/30' },
-    { title: 'Bo\'limlar', value: overview?.departments ?? '—', sub: 'Faol bo\'limlar', icon: <Building2 size={20} />, color: 'text-purple-600 bg-purple-100 dark:bg-purple-900/30' },
-    { title: 'Uskunalar', value: overview?.equipment.available ?? '—', sub: `Jami: ${overview?.equipment.total ?? 0}`, icon: <Camera size={20} />, color: 'text-orange-600 bg-orange-100 dark:bg-orange-900/30' },
-    { title: 'Transport', value: overview?.vehicles.available ?? '—', sub: `Jami: ${overview?.vehicles.total ?? 0}`, icon: <Car size={20} />, color: 'text-cyan-600 bg-cyan-100 dark:bg-cyan-900/30' },
-    { title: 'Jarayondagi', value: overview?.tasks.inProgress ?? '—', sub: 'Aktiv vazifalar', icon: <TrendingUp size={20} />, color: 'text-red-600 bg-red-100 dark:bg-red-900/30' },
+    { title: 'Faol xodimlar',  value: overview?.users.active      ?? '—', sub: `Jami: ${overview?.users.total ?? 0}`,      icon: <Users size={20} />,       color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30'     },
+    { title: 'Jami vazifalar', value: overview?.tasks.total       ?? '—', sub: `Bajarildi: ${overview?.tasks.completed ?? 0}`, icon: <ClipboardList size={20} />, color: 'text-green-600 bg-green-100 dark:bg-green-900/30'   },
+    { title: 'Bo\'limlar',     value: overview?.departments        ?? '—', sub: 'Faol bo\'limlar',                          icon: <Building2 size={20} />,   color: 'text-purple-600 bg-purple-100 dark:bg-purple-900/30' },
+    { title: 'Uskunalar',      value: overview?.equipment.available ?? '—', sub: `Jami: ${overview?.equipment.total ?? 0}`, icon: <Camera size={20} />,      color: 'text-orange-600 bg-orange-100 dark:bg-orange-900/30' },
+    { title: 'Transport',      value: overview?.vehicles.available  ?? '—', sub: `Jami: ${overview?.vehicles.total ?? 0}`,  icon: <Car size={20} />,         color: 'text-cyan-600 bg-cyan-100 dark:bg-cyan-900/30'       },
+    { title: 'Jarayondagi',    value: overview?.tasks.inProgress    ?? '—', sub: 'Aktiv vazifalar',                         icon: <TrendingUp size={20} />,  color: 'text-red-600 bg-red-100 dark:bg-red-900/30'          },
   ];
 
   return (
@@ -37,6 +55,7 @@ export default function AnalyticsPage() {
         <p className="text-sm text-gray-500 mt-0.5">Tizim statistikasi va ko'rsatkichlari</p>
       </div>
 
+      {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {kpis.map((k) => (
           <div key={k.title} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
@@ -50,39 +69,10 @@ export default function AnalyticsPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">So'nggi 7 kun — vazifalar</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-              <Tooltip />
-              <Bar dataKey="created" name="Yaratildi" fill="#3b82f6" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="completed" name="Bajarildi" fill="#10b981" radius={[3, 3, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+      {/* Charts — lazy loaded */}
+      <AnalyticsCharts chartData={chartData} taskPieData={taskPieData} />
 
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Vazifalar holati</h3>
-          {taskPieData.some((d) => d.value > 0) ? (
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie data={taskPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
-                  {taskPieData.map((entry, index) => <Cell key={index} fill={entry.color} />)}
-                </Pie>
-                <Legend />
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="h-[220px] flex items-center justify-center text-gray-400 text-sm">Ma'lumot yo'q</div>
-          )}
-        </div>
-      </div>
-
+      {/* Departments table */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Bo'limlar bo'yicha</h3>
         <div className="overflow-x-auto">
@@ -97,6 +87,14 @@ export default function AnalyticsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-slate-700/50">
+              {!depts &&
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i}>
+                    <td colSpan={5} className="py-3">
+                      <div className="h-4 bg-gray-100 dark:bg-slate-700 rounded animate-pulse" />
+                    </td>
+                  </tr>
+                ))}
               {deptData.map((d: any) => {
                 const pct = d.tasks > 0 ? Math.round((d.completed / d.tasks) * 100) : 0;
                 return (

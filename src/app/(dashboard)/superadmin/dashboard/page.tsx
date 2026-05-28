@@ -89,13 +89,13 @@ export default function SuperDashboard() {
       {/* Task status bars */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {[
-          { label: 'Bajarildi',  count: overview?.tasks.completed ?? 0,  total: overview?.tasks.total || 1, color: 'bg-green-500', icon: <CheckCircle2 size={14} className="text-green-500" /> },
-          { label: 'Jarayonda',  count: overview?.tasks.inProgress ?? 0, total: overview?.tasks.total || 1, color: 'bg-blue-500',  icon: <Clock size={14} className="text-blue-500" /> },
-          { label: 'Kutilmoqda', count: overview?.tasks.pending ?? 0,    total: overview?.tasks.total || 1, color: 'bg-amber-500', icon: <XCircle size={14} className="text-amber-500" /> },
+          { label: 'Bajarildi',  count: overview?.tasks.completed ?? 0,  total: overview?.tasks.total || 1, color: 'bg-green-500', icon: <CheckCircle2 size={14} className="text-green-500" />, href: '/superadmin/tasks?status=COMPLETED'   },
+          { label: 'Jarayonda',  count: overview?.tasks.inProgress ?? 0, total: overview?.tasks.total || 1, color: 'bg-blue-500',  icon: <Clock size={14} className="text-blue-500" />,       href: '/superadmin/tasks?status=IN_PROGRESS' },
+          { label: 'Kutilmoqda', count: overview?.tasks.pending ?? 0,    total: overview?.tasks.total || 1, color: 'bg-amber-500', icon: <XCircle size={14} className="text-amber-500" />,    href: '/superadmin/tasks?status=PENDING'     },
         ].map((s) => (
           <Link
             key={s.label}
-            href="/superadmin/tasks"
+            href={s.href}
             className="group bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700
                        hover:border-blue-200 dark:hover:border-blue-700 hover:shadow-md hover:-translate-y-px
                        transition-all duration-200 block"

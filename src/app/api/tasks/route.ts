@@ -12,9 +12,10 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
 
     const tasks = await taskService.list(session.user, {
-      status:   searchParams.get('status')   ?? undefined,
-      priority: searchParams.get('priority') ?? undefined,
-      search:   searchParams.get('search')   ?? undefined,
+      status:       searchParams.get('status')       ?? undefined,
+      priority:     searchParams.get('priority')     ?? undefined,
+      search:       searchParams.get('search')       ?? undefined,
+      departmentId: searchParams.get('departmentId') ?? undefined,
     });
 
     return apiResponse.success(tasks);

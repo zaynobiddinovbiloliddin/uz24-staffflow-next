@@ -1,15 +1,24 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import useSWR from 'swr';
+import { toast } from 'sonner';
 import { Plus, Edit2, Trash2, Clock } from 'lucide-react';
-import ConfirmModal from '@/components/ui/ConfirmModal';
 import { format, startOfWeek, addDays } from 'date-fns';
+
+const ConfirmModal = dynamic(() => import('@/components/ui/ConfirmModal'), { ssr: false });
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 const SHIFTS = ['Kunduzgi', 'Kechki', 'Tungi', 'Qisqartirilgan'];
 const EMPTY = { userId: '', date: '', startTime: '09:00', endTime: '18:00', shiftType: 'Kunduzgi', note: '' };
 const DAY_NAMES = ['Dush', 'Sesh', 'Chor', 'Pay', 'Juma', 'Shan', 'Yak'];
+const SHIFT_COLORS: Record<string, string> = {
+  Kunduzgi:      'bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800 text-blue-700 dark:text-blue-300',
+  Kechki:        'bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800 text-purple-700 dark:text-purple-300',
+  Tungi:         'bg-slate-100 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300',
+  Qisqartirilgan:'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800 text-green-700 dark:text-green-300',
+};
 
 export default function SchedulesPage() {
   const today = new Date();
@@ -42,9 +51,10 @@ export default function SchedulesPage() {
       const url = editing ? `/api/schedules/${editing.id}` : '/api/schedules';
       const res = await fetch(url, { method: editing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
       const d = await res.json();
-      if (!res.ok) { setError(d.message); return; }
+      if (!res.ok) { setError(d.message); toast.error(d.message); return; }
       setModal(false); mutate();
-    } catch { setError('Xato'); } finally { setSaving(false); }
+      toast.success(editing ? "Jadval yangilandi" : "Yangi jadval qo'shildi");
+    } catch { setError('Xato'); toast.error('Xato yuz berdi'); } finally { setSaving(false); }
   }
   function handleDelete(id: string) {
     setConfirmDlg({
@@ -52,7 +62,8 @@ export default function SchedulesPage() {
       message: "Ish jadvalini o'chirmoqchimisiz?",
       onConfirm: async () => {
         setConfirmDlg((d) => ({ ...d, open: false }));
-        await fetch(`/api/schedules/${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/schedules/${id}`, { method: 'DELETE' });
+        if (!res.ok) toast.error("O'chirishda xato"); else toast.success("Jadval o'chirildi");
         mutate();
       },
     });
@@ -73,35 +84,37 @@ export default function SchedulesPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-2">
-        {weekDays.map((day, idx) => {
-          const dayKey = format(day, 'yyyy-MM-dd');
-          const daySched = schedules.filter((s) => format(new Date(s.date), 'yyyy-MM-dd') === dayKey);
-          const isToday = dayKey === format(today, 'yyyy-MM-dd');
-          return (
-            <div key={dayKey} className="min-h-[100px]">
-              <div className={`text-center py-2 rounded-lg text-xs font-semibold mb-1 ${isToday ? 'bg-blue-600 text-white' : 'bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-400'}`}>
-                <div>{DAY_NAMES[idx]}</div>
-                <div className="text-base font-bold">{format(day, 'd')}</div>
-              </div>
-              <div className="space-y-1">
-                {daySched.map((s: any) => (
-                  <div key={s.id} className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded p-1.5 text-xs">
-                    <p className="font-medium text-blue-700 dark:text-blue-300 truncate">{s.user?.fullName}</p>
-                    <p className="text-blue-500">{s.startTime}–{s.endTime}</p>
-                    <div className="flex gap-1 mt-0.5">
-                      <button onClick={() => openEdit(s)} className="text-blue-400 hover:text-blue-600"><Edit2 size={10} /></button>
-                      <button onClick={() => handleDelete(s.id)} className="text-red-400 hover:text-red-600"><Trash2 size={10} /></button>
+      <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+        <div className="grid grid-cols-7 gap-2 min-w-[560px]">
+          {weekDays.map((day, idx) => {
+            const dayKey = format(day, 'yyyy-MM-dd');
+            const daySched = schedules.filter((s) => format(new Date(s.date), 'yyyy-MM-dd') === dayKey);
+            const isToday = dayKey === format(today, 'yyyy-MM-dd');
+            return (
+              <div key={dayKey} className="min-h-[100px]">
+                <div className={`text-center py-2 rounded-lg text-xs font-semibold mb-1 ${isToday ? 'bg-blue-600 text-white' : 'bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-400'}`}>
+                  <div>{DAY_NAMES[idx]}</div>
+                  <div className="text-base font-bold">{format(day, 'd')}</div>
+                </div>
+                <div className="space-y-1">
+                  {daySched.map((s: any) => (
+                    <div key={s.id} className={`border rounded p-1.5 text-xs ${SHIFT_COLORS[s.shiftType] ?? SHIFT_COLORS.Kunduzgi}`}>
+                      <p className="font-medium truncate">{s.user?.fullName}</p>
+                      <p className="opacity-75 text-xs">{s.startTime}–{s.endTime}</p>
+                      <div className="flex gap-1 mt-0.5">
+                        <button onClick={() => openEdit(s)} className="opacity-60 hover:opacity-100"><Edit2 size={10} /></button>
+                        <button onClick={() => handleDelete(s.id)} className="text-red-400 hover:text-red-600"><Trash2 size={10} /></button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-                <button onClick={() => openCreate(day)} className="w-full py-1 rounded border border-dashed border-gray-200 dark:border-slate-700 text-gray-300 hover:border-blue-300 hover:text-blue-400 transition-colors">
-                  <Plus size={11} className="mx-auto" />
-                </button>
+                  ))}
+                  <button onClick={() => openCreate(day)} className="w-full py-1 rounded border border-dashed border-gray-200 dark:border-slate-700 text-gray-300 hover:border-blue-300 hover:text-blue-400 transition-colors">
+                    <Plus size={11} className="mx-auto" />
+                  </button>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
@@ -114,7 +127,7 @@ export default function SchedulesPage() {
           {schedules.map((s: any) => (
             <div key={s.id} className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 text-sm font-semibold flex items-center justify-center">{s.user?.fullName?.[0]}</div>
+                <div className={`w-8 h-8 rounded-full text-sm font-semibold flex items-center justify-center border ${SHIFT_COLORS[s.shiftType] ?? SHIFT_COLORS.Kunduzgi}`}>{s.user?.fullName?.[0]}</div>
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">{s.user?.fullName}</p>
                   <p className="text-xs text-gray-400">{format(new Date(s.date), 'dd.MM.yyyy')} — {s.shiftType}</p>
@@ -138,46 +151,48 @@ export default function SchedulesPage() {
       />
 
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-5">{editing ? 'Jadval tahrirlash' : 'Yangi jadval'}</h3>
-            <div className="space-y-3">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm modal-backdrop">
+          <div className="bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md flex flex-col max-h-[90vh] overflow-hidden modal-enter">
+            <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-4 border-b border-gray-100 dark:border-slate-700 flex-shrink-0">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white">{editing ? 'Jadval tahrirlash' : 'Yangi jadval'}</h3>
+            </div>
+            <div className="flex-1 overflow-y-auto min-h-0 px-5 sm:px-6 py-4 space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Xodim *</label>
-                <select value={form.userId} onChange={(e) => setForm((f) => ({ ...f, userId: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Xodim *</label>
+                <select value={form.userId} onChange={(e) => setForm((f) => ({ ...f, userId: e.target.value }))} className="select-base">
                   <option value="">— Tanlang —</option>
                   {users.map((u: any) => <option key={u.id} value={u.id}>{u.fullName}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Sana *</label>
-                <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Sana *</label>
+                <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} className="input-base" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Boshlanish</label>
-                  <input type="time" value={form.startTime} onChange={(e) => setForm((f) => ({ ...f, startTime: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Boshlanish</label>
+                  <input type="time" value={form.startTime} onChange={(e) => setForm((f) => ({ ...f, startTime: e.target.value }))} className="input-base" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tugash</label>
-                  <input type="time" value={form.endTime} onChange={(e) => setForm((f) => ({ ...f, endTime: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Tugash</label>
+                  <input type="time" value={form.endTime} onChange={(e) => setForm((f) => ({ ...f, endTime: e.target.value }))} className="input-base" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Smena turi</label>
-                <select value={form.shiftType} onChange={(e) => setForm((f) => ({ ...f, shiftType: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Smena turi</label>
+                <select value={form.shiftType} onChange={(e) => setForm((f) => ({ ...f, shiftType: e.target.value }))} className="select-base">
                   {SHIFTS.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Izoh</label>
-                <input value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Izoh</label>
+                <input value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} className="input-base" />
               </div>
+              {error && <p className="text-sm text-red-500">{error}</p>}
             </div>
-            {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setModal(false)} className="flex-1 py-2.5 rounded-lg border border-gray-200 dark:border-slate-600 text-sm text-gray-600 dark:text-gray-400">Bekor</button>
-              <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-medium">{saving ? 'Saqlanmoqda...' : 'Saqlash'}</button>
+            <div className="flex gap-3 px-5 sm:px-6 pb-5 sm:pb-6 pt-3 flex-shrink-0">
+              <button onClick={() => setModal(false)} className="btn-secondary flex-1">Bekor</button>
+              <button onClick={handleSave} disabled={saving} className="btn-primary flex-1">{saving ? 'Saqlanmoqda...' : 'Saqlash'}</button>
             </div>
           </div>
         </div>

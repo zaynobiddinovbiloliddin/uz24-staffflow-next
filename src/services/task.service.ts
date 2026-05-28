@@ -2,6 +2,7 @@ import { taskRepo, TaskFilter } from '@/repositories/task.repository';
 import { notificationRepo } from '@/repositories/notification.repository';
 import { logAudit } from '@/lib/audit';
 import { ForbiddenError, NotFoundError } from '@/lib/errors';
+import { prisma } from '@/lib/prisma';
 import type { Session } from 'next-auth';
 
 type Actor = Session['user'];
@@ -49,10 +50,10 @@ export const taskService = {
     const task = await taskRepo.findById(id);
     if (!task) throw new NotFoundError();
 
-    // Employee can only update status of their own tasks
+    // Employee can only update status + cancelReason of their own tasks
     if (actor.role === 'EMPLOYEE') {
       if (task.assignedToId !== actor.id) throw new ForbiddenError();
-      const allowedKeys = ['status'];
+      const allowedKeys = ['status', 'cancelReason'];
       const illegal = Object.keys(data).filter((k) => !allowedKeys.includes(k));
       if (illegal.length) throw new ForbiddenError('Siz faqat holatni o\'zgartira olasiz');
     }
@@ -60,7 +61,39 @@ export const taskService = {
     if (data.deadline) data.deadline = new Date(data.deadline as string);
 
     const updated = await taskRepo.update(id, data);
-    await logAudit(actor.id, 'UPDATE', 'Task', id, `Vazifa yangilandi: ${task.title}`);
+
+    // Send notification to all SuperAdmins when employee changes task status
+    if (actor.role === 'EMPLOYEE' && data.status && data.status !== task.status) {
+      const newStatus = data.status as string;
+      let title = '';
+      let message = '';
+
+      if (newStatus === 'IN_PROGRESS') {
+        title = '📥 Vazifa olindi';
+        message = `${actor.name} "${task.title}" vazifasini oldi`;
+      } else if (newStatus === 'COMPLETED') {
+        title = '✅ Vazifa bajarildi';
+        message = `${actor.name} "${task.title}" vazifasini bajardi`;
+      } else if (newStatus === 'CANCELLED') {
+        const reason = (data.cancelReason as string) || '';
+        title = '❌ Vazifa bekor qilindi';
+        message = `${actor.name} "${task.title}" vazifasini bekor qildi${reason ? `. Sabab: ${reason}` : ''}`;
+      }
+
+      if (title) {
+        const superadmins = await prisma.user.findMany({
+          where: { role: 'SUPERADMIN', isActive: true },
+          select: { id: true },
+        });
+        await Promise.all(
+          superadmins.map((sa) =>
+            notificationRepo.create({ title, message, type: 'task', userId: sa.id })
+          )
+        );
+      }
+    }
+
+    await logAudit(actor.id, 'UPDATE', 'Task', id, `Vazifa yangilandi: ${task.title} → ${data.status ?? 'yangilandi'}`);
     return updated;
   },
 
