@@ -27,14 +27,13 @@ function generateSQL(data: {
   departments: any[];
   equipment: any[];
   vehicles: any[];
-  payrolls: any[];
 }): string {
   const lines: string[] = [
     `-- ============================================================`,
     `-- Uz24 StaffFlow — SQL Backup`,
     `-- Exported: ${data.exportedAt}`,
     `-- Users: ${data.users.length} | Tasks: ${data.tasks.length} | Depts: ${data.departments.length}`,
-    `-- Equipment: ${data.equipment.length} | Vehicles: ${data.vehicles.length} | Payrolls: ${data.payrolls.length}`,
+    `-- Equipment: ${data.equipment.length} | Vehicles: ${data.vehicles.length}`,
     `-- ============================================================`,
     ``,
     `-- DEPARTMENTS`,
@@ -117,22 +116,6 @@ function generateSQL(data: {
     );
   }
 
-  lines.push(``, `-- PAYROLLS`, `TRUNCATE "Payroll" CASCADE;`);
-  if (data.payrolls.length) {
-    lines.push(
-      `INSERT INTO "Payroll" (id, userId, month, year, baseSalary, bonus, deductions, totalAmount, status) VALUES`
-    );
-    lines.push(
-      data.payrolls
-        .map(
-          (p) =>
-            `  (${esc(p.id)}, ${esc(p.userId)}, ${esc(p.month)}, ${esc(p.year)}, ` +
-            `${esc(p.baseSalary)}, ${esc(p.bonus)}, ${esc(p.deductions)}, ${esc(p.totalAmount)}, ${esc(p.status)})`
-        )
-        .join(',\n') + ';'
-    );
-  }
-
   lines.push(``, `-- END OF BACKUP`);
   return lines.join('\n');
 }
@@ -171,7 +154,7 @@ export async function POST(req: Request) {
   if (!chatId) return NextResponse.json({ error: 'TELEGRAM_BACKUP_CHAT_ID sozlanmagan' }, { status: 400 });
 
   try {
-    const [users, tasks, departments, equipment, vehicles, payrolls] = await Promise.all([
+    const [users, tasks, departments, equipment, vehicles] = await Promise.all([
       prisma.user.findMany({
         select: {
           id: true, fullName: true, username: true, role: true,
@@ -204,13 +187,6 @@ export async function POST(req: Request) {
           status: true, fuelType: true, mileage: true, assignedToId: true,
         },
       }),
-      prisma.payroll.findMany({
-        select: {
-          id: true, userId: true, month: true, year: true, baseSalary: true,
-          bonus: true, deductions: true, totalAmount: true, status: true,
-        },
-        orderBy: [{ year: 'desc' }, { month: 'desc' }],
-      }),
     ]);
 
     const summary = {
@@ -219,12 +195,11 @@ export async function POST(req: Request) {
       departments: departments.length,
       equipment: equipment.length,
       vehicles: vehicles.length,
-      payrolls: payrolls.length,
     };
 
     const sqlContent = generateSQL({
       exportedAt: new Date().toISOString(),
-      users, tasks, departments, equipment, vehicles, payrolls,
+      users, tasks, departments, equipment, vehicles,
     });
 
     const ok = await sendToTelegram(chatId, token, sqlContent, summary);

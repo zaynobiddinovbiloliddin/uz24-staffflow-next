@@ -6,7 +6,7 @@ import useSWR from 'swr';
 import { toast } from 'sonner';
 import {
   Plus, Search, Edit2, Trash2, ToggleLeft, ToggleRight,
-  Loader2, Eye, EyeOff, Camera, X,
+  Loader2, Eye, EyeOff, Camera, X, FileDown,
 } from 'lucide-react';
 
 const ConfirmModal = dynamic(() => import('@/components/ui/ConfirmModal'), { ssr: false });
@@ -23,6 +23,24 @@ const ROLE_COLORS: Record<string, string> = {
   ADMIN:      'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   EMPLOYEE:   'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
 };
+
+const PASS_SENTINEL = '••••••••';
+
+async function exportUsers(users: any[]) {
+  if (!users.length) { const { toast: t } = await import('sonner'); t.error("Xodimlar ro'yxati bo'sh"); return; }
+  const { exportUsersExcel } = await import('@/lib/exportExcel');
+  exportUsersExcel(
+    users.map((u) => ({
+      fullName: u.fullName,
+      position: u.position ?? '',
+      department: u.department?.name ?? '',
+      phone: u.phone ?? '',
+      telegram: u.username ? `@${u.username}` : '',
+      status: u.isActive ? 'Faol' : 'Nofaol',
+      portfolio: '',
+    })),
+  );
+}
 
 const EMPTY = {
   fullName: '', username: '', password: '', role: 'EMPLOYEE',
@@ -86,7 +104,7 @@ export default function UsersPage() {
   function openEdit(user: any) {
     setEditing(user);
     setForm({
-      fullName: user.fullName, username: user.username, password: '',
+      fullName: user.fullName, username: user.username, password: PASS_SENTINEL,
       role: user.role, position: user.position ?? '', phone: user.phone ?? '',
       departmentId: user.departmentId ?? '', avatar: user.avatar ?? '',
     });
@@ -107,16 +125,16 @@ export default function UsersPage() {
   }
 
   async function handleSave() {
-    if (!form.fullName.trim())               { setError("To'liq ism kiritilmadi"); return; }
-    if (!editing && !form.username.trim())   { setError('Username kiritilmadi'); return; }
-    if (!editing && !form.password.trim())   { setError('Parol kiritilmadi'); return; }
+    if (!form.fullName.trim())             { setError("To'liq ism kiritilmadi"); return; }
+    if (!form.username.trim())             { setError('Username kiritilmadi'); return; }
+    if (!editing && !form.password.trim()) { setError('Parol kiritilmadi'); return; }
 
     setSaving(true); setError('');
     try {
       const url    = editing ? `/api/users/${editing.id}` : '/api/users';
       const method = editing ? 'PUT' : 'POST';
       const body: any = { ...form };
-      if (editing && !body.password) delete body.password;
+      if (editing && (!body.password || body.password === PASS_SENTINEL)) delete body.password;
       if (!body.departmentId) delete body.departmentId;
       if (!body.avatar) delete body.avatar;
 
@@ -190,9 +208,17 @@ export default function UsersPage() {
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Foydalanuvchilar</h1>
           <p className="text-sm text-gray-500 mt-0.5">{users.length} ta foydalanuvchi</p>
         </div>
-        <button onClick={openCreate} className="btn-primary">
-          <Plus size={16} /> Yangi
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => exportUsers(users)}
+            className="flex items-center gap-2 border border-green-200 dark:border-green-700 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 text-sm font-medium px-3 py-2 rounded-lg"
+          >
+            <FileDown size={15} /> Excel
+          </button>
+          <button onClick={openCreate} className="btn-primary">
+            <Plus size={16} /> Yangi
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -459,30 +485,30 @@ export default function UsersPage() {
               {/* Username */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
-                  Username <span className="text-red-500">*</span>
+                  Username (Login) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={form.username}
-                  onChange={(e) => !editing && setForm((f) => ({ ...f, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') }))}
+                  onChange={(e) => setForm((f) => ({ ...f, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') }))}
                   placeholder="username"
-                  disabled={!!editing}
-                  className={`input-base ${editing ? 'opacity-60 cursor-not-allowed bg-gray-50 dark:bg-slate-800' : ''}`}
+                  className="input-base"
                 />
-                {editing && <p className="text-xs text-gray-400 mt-1">Username o'zgartirib bo'lmaydi</p>}
+                <p className="text-xs text-gray-400 mt-1">Faqat kichik harf, raqam va _ belgisi</p>
               </div>
 
               {/* Password */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
-                  {editing ? 'Parol (o\'zgartirish uchun)' : <>Parol <span className="text-red-500">*</span></>}
+                  {editing ? 'Parol' : <>Parol <span className="text-red-500">*</span></>}
                 </label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={form.password}
                     onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                    placeholder={editing ? "Yangi parol kiriting (ixtiyoriy)" : "Kamida 6 belgi"}
+                    onFocus={(e) => { if (editing && e.target.value === PASS_SENTINEL) setForm((f) => ({ ...f, password: '' })); }}
+                    placeholder={editing ? "O'zgartirish uchun yangi parol yozing" : "Kamida 6 belgi"}
                     className="input-base pr-11"
                   />
                   <button

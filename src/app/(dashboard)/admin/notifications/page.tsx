@@ -8,7 +8,7 @@ import { clsx } from 'clsx';
 import { toast } from 'sonner';
 import { fetcher } from '@/lib/fetcher';
 
-const TYPE_ICONS: Record<string, string> = { task: '📋', schedule: '📅', payroll: '💰', info: 'ℹ️', system: '⚙️' };
+const TYPE_ICONS: Record<string, string> = { task: '📋', schedule: '📅', info: 'ℹ️', system: '⚙️' };
 
 export default function AdminNotificationsPage() {
   const { data, mutate } = useSWR('/api/notifications', fetcher, { refreshInterval: 15000 });

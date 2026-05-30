@@ -56,7 +56,7 @@ export default function LoginPage() {
               priority
             />
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white">Uz24 StaffFlow</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">O'zbekiston24</h1>
           <p className="text-blue-300 text-xs sm:text-sm mt-1">O'zbekiston 24 telekanali — Xodimlar tizimi</p>
         </div>
 

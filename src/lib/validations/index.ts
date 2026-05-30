@@ -16,6 +16,8 @@ export const createUserSchema = z.object({
 
 export const updateUserSchema = z.object({
   fullName:     z.string().min(2).max(100).optional(),
+  username:     z.string().min(3).max(50)
+                  .regex(/^[a-z0-9_]+$/, 'Faqat kichik harf, raqam, _').optional(),
   role:         z.enum(['SUPERADMIN', 'ADMIN', 'EMPLOYEE']).optional(),
   position:     z.string().max(100).optional(),
   phone:        z.string().max(20).optional(),
@@ -118,14 +120,3 @@ export const createVehicleSchema = z.object({
 export const updateVehicleSchema   = createVehicleSchema.partial();
 export const assignVehicleSchema   = z.object({ assignedToId: z.string().cuid().nullable() });
 
-// ─── Payroll ──────────────────────────────────────────────────────────────────
-
-export const createPayrollSchema = z.object({
-  userId:     z.string().cuid(),
-  month:      z.number().int().min(1).max(12),
-  year:       z.number().int().min(2020).max(2099),
-  baseSalary: z.number().positive("Asosiy maosh musbat bo'lishi kerak"),
-  bonus:      z.number().min(0).default(0),
-  deductions: z.number().min(0).default(0),
-  notes:      z.string().max(500).optional(),
-});

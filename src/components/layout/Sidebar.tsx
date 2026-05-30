@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Users, ClipboardList, Building2, Calendar,
-  Camera, Car, DollarSign, BarChart2, ShieldCheck,
+  Camera, Car, BarChart2, ShieldCheck,
   Bell, Settings, ChevronRight, X,
 } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -21,7 +21,6 @@ const SUPERADMIN_MENU: NavItem[] = [
   { href: '/superadmin/schedules',  label: 'Ish jadvali',        icon: <Calendar size={18} /> },
   { href: '/superadmin/equipment',  label: 'Uskunalar',          icon: <Camera size={18} /> },
   { href: '/superadmin/vehicles',   label: 'Transport',          icon: <Car size={18} /> },
-  { href: '/superadmin/payroll',    label: 'Maosh',              icon: <DollarSign size={18} /> },
   { href: '/superadmin/analytics',  label: 'Tahlil',             icon: <BarChart2 size={18} /> },
   { href: '/superadmin/audit-logs', label: 'Audit jurnal',       icon: <ShieldCheck size={18} /> },
   { href: '/superadmin/notifications', label: 'Bildirishnomalar', icon: <Bell size={18} /> },
@@ -90,7 +89,7 @@ export function Sidebar({
             />
           </div>
           <div className="min-w-0">
-            <p className="text-white font-bold text-sm leading-tight truncate">Uz24 StaffFlow</p>
+            <p className="text-white font-bold text-sm leading-tight truncate">O'zbekiston24</p>
             <p className="text-slate-400 text-xs mt-0.5 truncate">{ROLE_LABELS[role]}</p>
           </div>
         </div>

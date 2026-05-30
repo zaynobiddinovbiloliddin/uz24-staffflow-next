@@ -8,7 +8,6 @@ const PAGE_NAMES: Record<string, string> = {
   schedules: 'Jadvallar',
   equipment: 'Uskunalar',
   vehicles: 'Transport',
-  payroll: 'Maosh',
   analytics: 'Tahlil',
   'audit-logs': 'Audit jurnal',
   settings: 'Sozlamalar',

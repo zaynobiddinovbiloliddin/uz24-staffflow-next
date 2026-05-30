@@ -161,14 +161,6 @@ const spec = {
       patch:  { tags: ['Vehicles'], summary: 'Assign/unassign vehicle', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { '200': { description: 'Assigned' } } },
       delete: { tags: ['Vehicles'], summary: 'Delete vehicle (SUPERADMIN)', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { '204': { description: 'Deleted' } } },
     },
-    '/payroll': {
-      get:  { tags: ['Payroll'], summary: 'List payroll', description: 'EMPLOYEE: own | SUPERADMIN/ADMIN: filtered', parameters: [{ name: 'month', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 12 } }, { name: 'year', in: 'query', schema: { type: 'integer' } }], responses: { '200': { description: 'Payroll list' } } },
-      post: { tags: ['Payroll'], summary: 'Create payroll entry (SUPERADMIN)', responses: { '201': { description: 'Created' } } },
-    },
-    '/payroll/{id}': {
-      patch:  { tags: ['Payroll'], summary: 'Mark as paid (SUPERADMIN)', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', properties: { action: { type: 'string', enum: ['pay'] } } } } } }, responses: { '200': { description: 'Paid' } } },
-      delete: { tags: ['Payroll'], summary: 'Delete payroll entry (SUPERADMIN)', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { '204': { description: 'Deleted' } } },
-    },
     '/notifications': {
       get: { tags: ['Notifications'], summary: 'Get my notifications', parameters: [{ name: 'unread', in: 'query', schema: { type: 'boolean' } }], responses: { '200': { description: 'Notifications' } } },
     },

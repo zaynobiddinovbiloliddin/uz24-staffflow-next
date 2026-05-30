@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import {
-  Users, ClipboardList, Calendar, DollarSign, Bell, BarChart2,
+  Users, ClipboardList, Calendar, Bell, BarChart2,
   ArrowRight, CheckCircle, ChevronRight, Shield, Zap, Globe,
 } from 'lucide-react';
 
@@ -27,12 +27,6 @@ const FEATURES = [
     color: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400',
   },
   {
-    icon: DollarSign,
-    title: 'Maosh hisoblash',
-    desc: 'Oylik maosh, bonuslar va to\'lovlar holatini avtomatik kuzatish',
-    color: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
-  },
-  {
     icon: Bell,
     title: 'Bildirishnomalar',
     desc: 'Real-time xabarnomalar: yangi vazifa, jadval o\'zgarishi, to\'lov holati',
@@ -54,7 +48,6 @@ const ROLES = [
     items: [
       'Barcha xodimlarni boshqarish',
       'Barcha bo\'limlarni ko\'rish',
-      'Maosh va to\'lovlar',
       'Audit log va xavfsizlik',
     ],
     from: 'from-blue-600',
@@ -108,7 +101,7 @@ export default function LandingPage() {
             <div className="w-8 h-8 rounded-lg bg-white shadow flex items-center justify-center overflow-hidden">
               <Image src="/logo.png" alt="Uz24" width={28} height={28} className="object-contain" />
             </div>
-            <span className="text-white font-bold text-lg hidden sm:block">Uz24 StaffFlow</span>
+            <span className="text-white font-bold text-lg hidden sm:block">O'zbekiston24</span>
           </div>
           <Link
             href="/login"
@@ -151,7 +144,7 @@ export default function LandingPage() {
           </h1>
           <p className="text-lg sm:text-xl text-blue-200 max-w-2xl mx-auto mb-10 leading-relaxed">
             O'zbekiston 24 telekanali xodimlari uchun zamonaviy HR platformasi.
-            Vazifalar, jadvallar, maosh va bildirishnomalar — hammasi bir joyda.
+            Vazifalar, jadvallar va bildirishnomalar — hammasi bir joyda.
           </p>
 
           {/* CTA Buttons */}
@@ -294,7 +287,7 @@ export default function LandingPage() {
             <div className="w-8 h-8 rounded-lg bg-white shadow flex items-center justify-center overflow-hidden">
               <Image src="/logo.png" alt="Uz24" width={28} height={28} className="object-contain" />
             </div>
-            <span className="text-white font-bold">Uz24 StaffFlow</span>
+            <span className="text-white font-bold">O'zbekiston24</span>
           </div>
           <p className="text-blue-400/60 text-sm text-center">
             © 2025 O'zbekiston 24. Barcha huquqlar himoyalangan.

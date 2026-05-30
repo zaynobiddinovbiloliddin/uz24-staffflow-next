@@ -1,15 +1,21 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import useSWR from 'swr';
 import { User, Phone, Building2, ClipboardList, Calendar, Edit2, Camera } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
+const MonthlyCalendar = dynamic(
+  () => import('@/components/schedule/MonthlyCalendar').then((m) => m.MonthlyCalendar),
+  { ssr: false },
+);
+
 export default function EmployeeProfilePage() {
   const { data, mutate } = useSWR('/api/me', undefined);
   const { data: tasksData } = useSWR('/api/tasks', undefined);
-  const { data: schedData } = useSWR('/api/schedules', undefined);
+  const { data: schedData } = useSWR('/api/schedules?from=2020-01-01&to=2030-12-31', undefined);
 
   const me = data?.data;
   const tasks: any[] = tasksData?.data ?? [];
@@ -173,6 +179,18 @@ export default function EmployeeProfilePage() {
             <p className="text-xs text-gray-400 mt-1">{completionRate}% bajarildi</p>
           </>
         )}
+      </div>
+
+      {/* Monthly calendar */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
+        <MonthlyCalendar
+          schedules={schedules.map((s: any) => ({
+            date: typeof s.date === 'string' ? s.date : new Date(s.date).toISOString(),
+            shiftType: s.shiftType,
+            startTime: s.startTime,
+            endTime: s.endTime,
+          }))}
+        />
       </div>
 
       {/* Upcoming schedules */}

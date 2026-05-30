@@ -50,6 +50,11 @@ export const userService = {
 
     const updateData: Record<string, unknown> = { ...data };
 
+    if (updateData.username) {
+      const taken = await userRepo.findByUsername(updateData.username as string);
+      if (taken && taken.id !== id) throw new ConflictError('Bu username band');
+    }
+
     if (updateData.password) {
       updateData.password = await bcrypt.hash(updateData.password as string, 12);
     } else {

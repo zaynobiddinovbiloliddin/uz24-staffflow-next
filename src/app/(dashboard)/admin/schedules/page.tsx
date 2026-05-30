@@ -3,13 +3,26 @@
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import useSWR from 'swr';
-import { Plus, Edit2, Trash2, Clock } from 'lucide-react';
+import { Plus, Edit2, Trash2, Clock, FileDown } from 'lucide-react';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { toast } from 'sonner';
 
 const ConfirmModal = dynamic(() => import('@/components/ui/ConfirmModal'), { ssr: false });
 
 const SHIFTS = ['Kunduzgi', 'Kechki', 'Tungi', 'Qisqartirilgan'];
+
+async function exportFilmingAdmin(schedules: any[], from: string) {
+  if (!schedules.length) { const { toast: t } = await import('sonner'); t.error("Jadval yo'q"); return; }
+  const { exportFilmingScheduleWord } = await import('@/lib/exportWord');
+  const entries = schedules.map((s, i) => ({
+    camera: i + 1,
+    startTime: s.startTime,
+    operator: s.user?.fullName ?? '—',
+    location: s.note ?? s.shiftType ?? '—',
+    reporters: '',
+  }));
+  await exportFilmingScheduleWord(entries, from);
+}
 const EMPTY = { userId: '', date: '', startTime: '09:00', endTime: '18:00', shiftType: 'Kunduzgi', note: '' };
 const DAY_NAMES = ['Dush', 'Sesh', 'Chor', 'Pay', 'Juma', 'Shan', 'Yak'];
 const SHIFT_COLORS: Record<string, string> = {
@@ -108,6 +121,12 @@ export default function AdminSchedulesPage() {
             onClick={() => setWeekStart(addDays(weekStart, 7))}
             className="btn-secondary px-3 py-2 text-sm"
           >Keyingi →</button>
+          <button
+            onClick={() => exportFilmingAdmin(schedules, from)}
+            className="flex items-center gap-2 border border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 text-sm font-medium px-3 py-2 rounded-lg"
+          >
+            <FileDown size={15} /> Tasvirga olish
+          </button>
           <button onClick={() => openCreate()} className="btn-primary flex items-center gap-1.5">
             <Plus size={16} /> Qo'shish
           </button>

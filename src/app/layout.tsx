@@ -4,7 +4,7 @@ import { Providers } from './providers';
 import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
-  title: 'Uz24 StaffFlow',
+  title: 'O\'zbekiston24',
   description: 'O\'zbekiston 24 telekanali — xodimlar boshqaruv tizimi',
 };
 

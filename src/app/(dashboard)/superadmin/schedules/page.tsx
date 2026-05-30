@@ -4,12 +4,41 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import useSWR from 'swr';
 import { toast } from 'sonner';
-import { Plus, Edit2, Trash2, Clock } from 'lucide-react';
+import { Plus, Edit2, Trash2, Clock, FileDown, CalendarDays, LayoutGrid } from 'lucide-react';
 import { format, startOfWeek, addDays } from 'date-fns';
+
+const MonthlyGrid = dynamic(() => import('@/components/schedule/MonthlyGrid').then((m) => m.MonthlyGrid), { ssr: false });
 
 const ConfirmModal = dynamic(() => import('@/components/ui/ConfirmModal'), { ssr: false });
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+async function exportFilming(schedules: any[], from: string) {
+  if (!schedules.length) { const { toast: t } = await import('sonner'); t.error("Jadval yo'q"); return; }
+  const { exportFilmingScheduleWord } = await import('@/lib/exportWord');
+  const entries = schedules.map((s, i) => ({
+    camera: i + 1,
+    startTime: s.startTime,
+    operator: s.user?.fullName ?? '—',
+    location: s.note ?? s.shiftType ?? '—',
+    reporters: '',
+  }));
+  await exportFilmingScheduleWord(entries, from);
+}
+
+async function exportWeek(schedules: any[], from: string, to: string) {
+  if (!schedules.length) { const { toast: t } = await import('sonner'); t.error("Jadval yo'q"); return; }
+  const { exportWeekScheduleWord } = await import('@/lib/exportWord');
+  const groups = schedules.map((s) => ({
+    date: format(new Date(s.date), 'dd.MM.yyyy'),
+    groupName: s.shiftType ?? 'Kunduzgi',
+    workers: [s.user?.fullName ?? '—'],
+    startTime: s.startTime,
+    endTime: s.endTime,
+    note: s.note ?? '',
+  }));
+  await exportWeekScheduleWord(groups, `${from} — ${to}`);
+}
 const SHIFTS = ['Kunduzgi', 'Kechki', 'Tungi', 'Qisqartirilgan'];
 const EMPTY = { userId: '', date: '', startTime: '09:00', endTime: '18:00', shiftType: 'Kunduzgi', note: '' };
 const DAY_NAMES = ['Dush', 'Sesh', 'Chor', 'Pay', 'Juma', 'Shan', 'Yak'];
@@ -28,12 +57,21 @@ export default function SchedulesPage() {
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [view, setView] = useState<'week' | 'month'>('week');
+  const [monthYear, setMonthYear] = useState({ year: today.getFullYear(), month: today.getMonth() + 1 });
   const [confirmDlg, setConfirmDlg] = useState<{ open: boolean; message: string; onConfirm: () => void }>({ open: false, message: '', onConfirm: () => {} });
 
   const from = format(weekStart, 'yyyy-MM-dd');
   const to = format(addDays(weekStart, 6), 'yyyy-MM-dd');
 
-  const { data, mutate } = useSWR(`/api/schedules?from=${from}&to=${to}`, fetcher);
+  const monthFrom = `${monthYear.year}-${String(monthYear.month).padStart(2, '0')}-01`;
+  const lastDay = new Date(monthYear.year, monthYear.month, 0).getDate();
+  const monthTo = `${monthYear.year}-${String(monthYear.month).padStart(2, '0')}-${lastDay}`;
+
+  const { data, mutate } = useSWR(
+    view === 'week' ? `/api/schedules?from=${from}&to=${to}` : `/api/schedules?from=${monthFrom}&to=${monthTo}`,
+    fetcher,
+  );
   const { data: usersData } = useSWR('/api/users', fetcher);
   const schedules: any[] = data?.data ?? [];
   const users = usersData?.data ?? [];
@@ -69,21 +107,62 @@ export default function SchedulesPage() {
     });
   }
 
+  const MONTH_NAMES = ['', 'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Ish jadvali</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{from} — {to}</p>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {view === 'week' ? `${from} — ${to}` : `${MONTH_NAMES[monthYear.month]} ${monthYear.year}`}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setWeekStart(addDays(weekStart, -7))} className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-sm hover:bg-gray-50 dark:hover:bg-slate-700">← Oldingi</button>
-          <button onClick={() => setWeekStart(startOfWeek(today, { weekStartsOn: 1 }))} className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-sm hover:bg-gray-50 dark:hover:bg-slate-700">Bugun</button>
-          <button onClick={() => setWeekStart(addDays(weekStart, 7))} className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-sm hover:bg-gray-50 dark:hover:bg-slate-700">Keyingi →</button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* View toggle */}
+          <div className="flex rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden">
+            <button
+              onClick={() => setView('week')}
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${view === 'week' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700'}`}
+            >
+              <LayoutGrid size={14} /> Haftalik
+            </button>
+            <button
+              onClick={() => setView('month')}
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${view === 'month' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700'}`}
+            >
+              <CalendarDays size={14} /> Oylik
+            </button>
+          </div>
+
+          {view === 'week' ? (
+            <>
+              <button onClick={() => setWeekStart(addDays(weekStart, -7))} className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-sm hover:bg-gray-50 dark:hover:bg-slate-700">← Oldingi</button>
+              <button onClick={() => setWeekStart(startOfWeek(today, { weekStartsOn: 1 }))} className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-sm hover:bg-gray-50 dark:hover:bg-slate-700">Bugun</button>
+              <button onClick={() => setWeekStart(addDays(weekStart, 7))} className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-sm hover:bg-gray-50 dark:hover:bg-slate-700">Keyingi →</button>
+              <button onClick={() => exportFilming(schedules, from)} className="flex items-center gap-2 border border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 text-sm font-medium px-3 py-2 rounded-lg">
+                <FileDown size={15} /> Tasvirga olish
+              </button>
+              <button onClick={() => exportWeek(schedules, from, to)} className="flex items-center gap-2 border border-green-200 dark:border-green-700 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 text-sm font-medium px-3 py-2 rounded-lg">
+                <FileDown size={15} /> Haftalik Word
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => setMonthYear((m) => m.month === 1 ? { year: m.year - 1, month: 12 } : { ...m, month: m.month - 1 })} className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-sm hover:bg-gray-50 dark:hover:bg-slate-700">← Oldingi</button>
+              <button onClick={() => setMonthYear({ year: today.getFullYear(), month: today.getMonth() + 1 })} className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-sm hover:bg-gray-50 dark:hover:bg-slate-700">Bu oy</button>
+              <button onClick={() => setMonthYear((m) => m.month === 12 ? { year: m.year + 1, month: 1 } : { ...m, month: m.month + 1 })} className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-sm hover:bg-gray-50 dark:hover:bg-slate-700">Keyingi →</button>
+            </>
+          )}
           <button onClick={() => openCreate()} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg"><Plus size={16} /> Qo'shish</button>
         </div>
       </div>
 
+      {view === 'month' && (
+        <MonthlyGrid schedules={schedules} users={users} year={monthYear.year} month={monthYear.month} />
+      )}
+
+      {view === 'week' && (<>
       <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
         <div className="grid grid-cols-7 gap-2 min-w-[560px]">
           {weekDays.map((day, idx) => {
@@ -149,6 +228,7 @@ export default function SchedulesPage() {
         onConfirm={confirmDlg.onConfirm}
         onCancel={() => setConfirmDlg((d) => ({ ...d, open: false }))}
       />
+      </>)}
 
       {modal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm modal-backdrop">

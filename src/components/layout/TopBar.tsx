@@ -72,7 +72,7 @@ export function TopBar({ user, onMenuClick }: { user: Session['user']; onMenuCli
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="Uz24" className="w-full h-full object-contain" />
         </div>
-        <span className="text-sm font-bold text-gray-900 dark:text-white truncate">StaffFlow</span>
+        <span className="text-sm font-bold text-gray-900 dark:text-white truncate">O'zbekiston24</span>
       </div>
 
       <div className="hidden lg:block flex-1" />

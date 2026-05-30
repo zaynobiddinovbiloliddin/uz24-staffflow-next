@@ -30,8 +30,8 @@ export default function AuditLogsPage() {
   const total = data?.data?.total ?? 0;
   const pages = data?.data?.pages ?? 1;
 
-  const entities = ['User', 'Task', 'Department', 'Schedule', 'Equipment', 'Vehicle', 'Payroll'];
-  const actions = ['CREATE', 'UPDATE', 'DELETE', 'TOGGLE', 'PAY', 'ASSIGN'];
+  const entities = ['User', 'Task', 'Department', 'Schedule', 'Equipment', 'Vehicle'];
+  const actions = ['CREATE', 'UPDATE', 'DELETE', 'TOGGLE', 'ASSIGN'];
 
   return (
     <div className="space-y-5">

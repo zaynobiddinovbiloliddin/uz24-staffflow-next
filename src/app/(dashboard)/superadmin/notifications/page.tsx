@@ -8,7 +8,7 @@ import { clsx } from 'clsx';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-const TYPE_ICONS: Record<string, string> = { task: '📋', schedule: '📅', payroll: '💰', info: 'ℹ️', system: '⚙️' };
+const TYPE_ICONS: Record<string, string> = { task: '📋', schedule: '📅', info: 'ℹ️', system: '⚙️' };
 
 export default function NotificationsPage() {
   const { data, mutate } = useSWR('/api/notifications', fetcher, { refreshInterval: 15000 });
