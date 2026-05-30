@@ -82,6 +82,10 @@ model User {
   @@index([role])
   @@index([departmentId])
   @@index([isActive])
+
+  dailyStatuses    DailyStatus[]
+  filmingCreated   FilmingEntry[]    @relation("CreatedFilming")
+  filmingOperators FilmingOperator[] @relation("OperatorFilming")
 }
 
 model Department {
@@ -255,4 +259,54 @@ model AuditLog {
   @@index([entity])
   @@index([action])
   @@index([createdAt])
+}
+
+// I=Ishda, D=Dam, S=Safar, K=Kasallik, T=Ta'til, B=Boshqa, O=Otpusk
+model DailyStatus {
+  id     String   @id @default(cuid())
+  userId String
+  date   DateTime @db.Date
+  status String   @db.VarChar(2)
+  note   String?  @db.VarChar(300)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+}
+
+model FilmingEntry {
+  id          String   @id @default(cuid())
+  date        DateTime @db.Date
+  cameraNo    Int
+  startTime   String   @db.VarChar(5)
+  location    String   @db.VarChar(500)
+  topic       String   @db.VarChar(500)
+  reporters   String?  @db.VarChar(300)
+  equipment   String?  @db.VarChar(500)
+  createdById String
+
+  createdBy  User              @relation("CreatedFilming", fields: [createdById], references: [id])
+  operators  FilmingOperator[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+  @@index([createdById])
+}
+
+model FilmingOperator {
+  id             String @id @default(cuid())
+  filmingEntryId String
+  userId         String
+
+  filmingEntry FilmingEntry @relation(fields: [filmingEntryId], references: [id], onDelete: Cascade)
+  user         User         @relation("OperatorFilming", fields: [userId], references: [id])
+
+  @@unique([filmingEntryId, userId])
 }
