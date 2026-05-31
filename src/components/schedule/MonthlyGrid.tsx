@@ -168,14 +168,14 @@ export function MonthlyGrid({ schedules, users, year, month }: Props) {
                     {u.fullName}
                   </td>
                   {u.statuses.map((s) => {
-                    const info = STATUS_CODES[s.code];
+                    const info = s.code ? STATUS_CODES[s.code] : null;
                     return (
                       <td
                         key={s.date}
-                        title={`${s.date}: ${info.label}`}
+                        title={s.code ? `${s.date}: ${info?.label}` : s.date}
                         className="hidden md:table-cell text-center px-0.5 py-1"
                       >
-                        {s.code !== 'D' ? (
+                        {s.code && info ? (
                           <span
                             className="inline-flex items-center justify-center w-6 h-6 rounded text-[10px] font-bold"
                             style={{ background: info.bg, color: info.color, border: `1px solid ${info.border}` }}
@@ -183,7 +183,7 @@ export function MonthlyGrid({ schedules, users, year, month }: Props) {
                             {s.code}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center justify-center w-6 h-6 rounded text-[10px] text-gray-200 dark:text-slate-600">
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded text-[10px] text-gray-100 dark:text-slate-700">
                             ·
                           </span>
                         )}

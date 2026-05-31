@@ -24,14 +24,15 @@ export const EXCEL_COLORS: Record<StatusCode, string> = {
 
 export interface DailyStatus {
   date: string;
-  code: StatusCode;
+  // null = no record for this day (should show empty cell, NOT "D")
+  code: StatusCode | null;
 }
 
 export interface UserMonthStats {
   userId: string;
   fullName: string;
   workDays: number;     // I — Ishda
-  restDays: number;     // D — Dam olish
+  restDays: number;     // D — Dam olish (explicitly set)
   sickDays: number;     // S — Kasallik
   travelDays: number;   // K — Komandirovka
   vacationDays: number; // B — Ta'til
@@ -42,8 +43,9 @@ export interface UserMonthStats {
 }
 
 // Map Schedule.shiftType string to StatusCode
-export function shiftToStatusCode(shiftType: string | null): StatusCode {
-  if (!shiftType) return 'D';
+// Returns null when no shiftType (no record = empty, not "D")
+export function shiftToStatusCode(shiftType: string | null): StatusCode | null {
+  if (!shiftType) return null;
   const t = shiftType.trim();
   if (t === 'Kasallik') return 'S';
   if (t === 'Komandirovka' || t === 'Safar') return 'K';
@@ -51,7 +53,7 @@ export function shiftToStatusCode(shiftType: string | null): StatusCode {
   if (t === 'Zahira' || t === 'Rezerv') return 'T';
   if (t === 'Otpusk' || t === 'Ortiqcha') return 'O';
   if (t === 'Dam' || t === 'Dam olish') return 'D';
-  return 'I';
+  return 'I'; // Kunduzgi, Kechki, Tungi, Qisqartirilgan — all are work
 }
 
 export function computeMonthStats(
@@ -67,7 +69,8 @@ export function computeMonthStats(
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const sched = schedules.find((s) => s.date.startsWith(dateStr));
-    const code = sched ? shiftToStatusCode(sched.shiftType) : 'D';
+    // FIX: null when no record (was 'D' before — caused ALL empty days to show as "Dam olish")
+    const code: StatusCode | null = sched ? shiftToStatusCode(sched.shiftType) : null;
     statuses.push({ date: dateStr, code });
   }
 
@@ -75,6 +78,7 @@ export function computeMonthStats(
   let vacationDays = 0, otherDays = 0, leaveDays = 0, totalMinutes = 0;
 
   for (const s of statuses) {
+    if (!s.code) continue; // null = no record, skip counting
     if      (s.code === 'I') workDays++;
     else if (s.code === 'D') restDays++;
     else if (s.code === 'S') sickDays++;
@@ -87,7 +91,8 @@ export function computeMonthStats(
   for (const sch of schedules) {
     const [sh, sm] = sch.startTime.split(':').map(Number);
     const [eh, em] = sch.endTime.split(':').map(Number);
-    totalMinutes += (eh * 60 + em) - (sh * 60 + sm);
+    const mins = (eh * 60 + em) - (sh * 60 + sm);
+    if (mins > 0) totalMinutes += mins;
   }
 
   return {

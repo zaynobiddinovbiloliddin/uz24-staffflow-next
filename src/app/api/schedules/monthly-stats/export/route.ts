@@ -138,8 +138,9 @@ export async function GET(req: Request) {
       for (let d = 1; d <= daysInMonth; d++) {
         const colIdx = FIXED + d - 1;
         const dayStatus = ms.statuses[d - 1];
-        if (dayStatus && dayStatus.code !== 'D') {
-          sc(ws, ROW, colIdx, dayStatus.code, dayCellStyle(dayStatus.code));
+        // null = no record (empty cell), non-null = show colored code
+        if (dayStatus?.code) {
+          sc(ws, ROW, colIdx, dayStatus.code, dayCellStyle(dayStatus.code as StatusCode));
         } else {
           sc(ws, ROW, colIdx, '', emptyStyle);
         }

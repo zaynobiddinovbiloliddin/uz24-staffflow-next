@@ -84,20 +84,60 @@ async function main() {
 
   console.log('✅ Vazifalar yaratildi');
 
-  // Jadvallar (bugundan 7 kun)
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(today); date.setDate(date.getDate() + i);
-    await prisma.schedule.createMany({
-      data: [
-        { userId: emp1.id, date, startTime: '08:00', endTime: '17:00', shiftType: 'Kunduzgi' },
-        { userId: emp2.id, date, startTime: '08:00', endTime: '17:00', shiftType: 'Kunduzgi' },
-        { userId: emp3.id, date, startTime: '14:00', endTime: '22:00', shiftType: 'Kechki' },
-        { userId: emp4.id, date, startTime: '09:00', endTime: '18:00', shiftType: 'Kunduzgi' },
-      ],
-    });
+  // ── Jadvallar — May va Iyun 2026 + bugundan 7 kun ──────────────────────────
+  const employees = [
+    { user: emp1, start: '08:00', end: '17:00', shift: 'Kunduzgi', sickDay: 7  },
+    { user: emp2, start: '08:00', end: '17:00', shift: 'Kunduzgi', sickDay: 14 },
+    { user: emp3, start: '14:00', end: '22:00', shift: 'Kechki',   sickDay: 21 },
+    { user: emp4, start: '09:00', end: '18:00', shift: 'Kunduzgi', sickDay: 10 },
+  ];
+
+  // Generate schedules for a full month
+  async function seedMonth(year: number, month: number) {
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const records: any[] = [];
+    for (const emp of employees) {
+      for (let d = 1; d <= daysInMonth; d++) {
+        const date = new Date(year, month - 1, d);
+        const dow = date.getDay(); // 0=Sun, 6=Sat
+        const isWeekend = dow === 0 || dow === 6;
+        let shiftType: string;
+        let startTime: string;
+        let endTime: string;
+        if (isWeekend) {
+          shiftType = 'Dam'; startTime = '00:00'; endTime = '00:00';
+        } else if (d === emp.sickDay) {
+          shiftType = 'Kasallik'; startTime = '00:00'; endTime = '00:00';
+        } else {
+          shiftType = emp.shift; startTime = emp.start; endTime = emp.end;
+        }
+        records.push({ userId: emp.user.id, date, startTime, endTime, shiftType });
+      }
+    }
+    await prisma.schedule.createMany({ data: records });
+    console.log(`   ✓ ${year}-${String(month).padStart(2,'0')} uchun ${records.length} ta jadval`);
   }
-  console.log('✅ Jadvallar yaratildi');
+
+  await seedMonth(2026, 5); // May 2026
+  await seedMonth(2026, 6); // Iyun 2026
+
+  // Bugundan keyingi 7 kun (hozirgi oy uchun)
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const todayMonth = today.getMonth() + 1;
+  const todayYear = today.getFullYear();
+  if (!(todayYear === 2026 && (todayMonth === 5 || todayMonth === 6))) {
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today); date.setDate(date.getDate() + i);
+      await prisma.schedule.createMany({
+        data: employees.map(emp => ({
+          userId: emp.user.id, date,
+          startTime: emp.start, endTime: emp.end, shiftType: emp.shift,
+        })),
+      });
+    }
+    console.log('   ✓ Bugundan 7 kun jadval qo\'shildi');
+  }
+  console.log('✅ Jadvallar yaratildi (May 2026 + Iyun 2026)');
 
   // Uskunalar
   await prisma.equipment.createMany({
