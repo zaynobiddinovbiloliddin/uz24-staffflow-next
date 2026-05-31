@@ -6,11 +6,15 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seed boshlandi...');
 
-  // Tozalash
+  // Tozalash — FK tartibiga rioya qilib
   await prisma.auditLog.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.report.deleteMany();
   await prisma.payroll.deleteMany();
+  await prisma.dailyStatus.deleteMany();
+  await prisma.filmingOperator.deleteMany();
+  await prisma.filmingEntry.deleteMany();
+  await prisma.contact.deleteMany();
   await prisma.vehicle.deleteMany();
   await prisma.equipment.deleteMany();
   await prisma.schedule.deleteMany();
