@@ -4,7 +4,7 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import useSWR from 'swr';
 import { toast } from 'sonner';
-import { Plus, Edit2, Trash2, Clock, FileDown, CalendarDays, LayoutGrid } from 'lucide-react';
+import { Plus, Edit2, Trash2, Clock, FileDown, CalendarDays, LayoutGrid, TableProperties } from 'lucide-react';
 import { format, startOfWeek, addDays } from 'date-fns';
 
 const MonthlyGrid = dynamic(() => import('@/components/schedule/MonthlyGrid').then((m) => m.MonthlyGrid), { ssr: false });
@@ -152,6 +152,12 @@ export default function SchedulesPage() {
               <button onClick={() => setMonthYear((m) => m.month === 1 ? { year: m.year - 1, month: 12 } : { ...m, month: m.month - 1 })} className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-sm hover:bg-gray-50 dark:hover:bg-slate-700">← Oldingi</button>
               <button onClick={() => setMonthYear({ year: today.getFullYear(), month: today.getMonth() + 1 })} className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-sm hover:bg-gray-50 dark:hover:bg-slate-700">Bu oy</button>
               <button onClick={() => setMonthYear((m) => m.month === 12 ? { year: m.year + 1, month: 1 } : { ...m, month: m.month + 1 })} className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-sm hover:bg-gray-50 dark:hover:bg-slate-700">Keyingi →</button>
+              <a
+                href={`/api/schedules/monthly-stats/export?year=${monthYear.year}&month=${monthYear.month}`}
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors"
+              >
+                <TableProperties size={15} /> Excel yuklab olish
+              </a>
             </>
           )}
           <button onClick={() => openCreate()} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg"><Plus size={16} /> Qo'shish</button>

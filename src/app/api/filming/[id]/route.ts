@@ -1,51 +1,99 @@
-import { NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth-helpers';
+import { requireAuth, requireAdminOrAbove } from '@/lib/auth-helpers';
 import { handleError, apiResponse } from '@/lib/api-response';
+import { logAudit } from '@/lib/audit';
 import { prisma } from '@/lib/prisma';
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function GET(
+  _req: Request,
+  { params }: { params: { id: string } },
+) {
   try {
-    const session = await requireAuth();
-    if (session.user.role === 'EMPLOYEE') {
-      return NextResponse.json({ message: 'Ruxsat yo\'q' }, { status: 403 });
-    }
+    await requireAuth();
+    const entry = await prisma.filmingEntry.findUnique({
+      where: { id: params.id },
+      include: {
+        createdBy: { select: { id: true, fullName: true } },
+        operators: { orderBy: { sortOrder: 'asc' } },
+      },
+    });
+    if (!entry) return apiResponse.notFound('Jadval topilmadi');
+    return apiResponse.success(entry);
+  } catch (e) {
+    return handleError(e);
+  }
+}
 
+export async function PUT(
+  req: Request,
+  { params }: { params: { id: string } },
+) {
+  try {
+    const session = await requireAdminOrAbove();
     const body = await req.json();
-    const { cameraNo, startTime, location, topic, reporters, equipment, operatorIds } = body;
+    const { date, approvedBy, operators } = body;
+
+    if (!Array.isArray(operators) || operators.length === 0) {
+      return apiResponse.validationError("Kamida bitta qator bo'lishi shart");
+    }
 
     await prisma.filmingOperator.deleteMany({ where: { filmingEntryId: params.id } });
 
     const updated = await prisma.filmingEntry.update({
       where: { id: params.id },
       data: {
-        ...(cameraNo !== undefined && { cameraNo: Number(cameraNo) }),
-        ...(startTime && { startTime }),
-        ...(location && { location }),
-        ...(topic && { topic }),
-        reporters: reporters ?? null,
-        equipment: equipment ?? null,
-        operators: operatorIds?.length
-          ? { create: operatorIds.map((uid: string) => ({ userId: uid })) }
-          : undefined,
+        ...(date && { date: new Date(date) }),
+        ...(approvedBy !== undefined && { approvedBy: approvedBy?.trim() || 'M. Safarov' }),
+        operators: {
+          create: operators.map((op: any, idx: number) => ({
+            cameraNumber: String(op.cameraNumber ?? ''),
+            exitTime: String(op.exitTime ?? ''),
+            operatorNames: Array.isArray(op.operatorNames) ? op.operatorNames : [],
+            eventLocation: String(op.eventLocation ?? ''),
+            eventDescription: op.eventDescription?.trim() || null,
+            reporterNames: Array.isArray(op.reporterNames) ? op.reporterNames : [],
+            equipment: op.equipment?.trim() || 'HD jamlanmasi, mikrofon, chiroq, avtotransport',
+            sortOrder: typeof op.sortOrder === 'number' ? op.sortOrder : idx,
+          })),
+        },
       },
       include: {
         createdBy: { select: { id: true, fullName: true } },
-        operators: { include: { user: { select: { id: true, fullName: true } } } },
+        operators: { orderBy: { sortOrder: 'asc' } },
       },
     });
 
+    await logAudit(
+      session.user.id,
+      'UPDATE',
+      'FilmingEntry',
+      params.id,
+      `Tasvirga olish jadvali yangilandi`,
+    );
+
     return apiResponse.success(updated);
-  } catch (e) { return handleError(e); }
+  } catch (e) {
+    return handleError(e);
+  }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(
+  _req: Request,
+  { params }: { params: { id: string } },
+) {
   try {
-    const session = await requireAuth();
-    if (session.user.role === 'EMPLOYEE') {
-      return NextResponse.json({ message: 'Ruxsat yo\'q' }, { status: 403 });
-    }
-
+    const session = await requireAdminOrAbove();
     await prisma.filmingEntry.delete({ where: { id: params.id } });
-    return new NextResponse(null, { status: 204 });
-  } catch (e) { return handleError(e); }
+
+    await logAudit(
+      session.user.id,
+      'DELETE',
+      'FilmingEntry',
+      params.id,
+      "Tasvirga olish jadvali o'chirildi",
+    );
+
+    return apiResponse.noContent();
+  } catch (e) {
+    return handleError(e);
+  }
 }

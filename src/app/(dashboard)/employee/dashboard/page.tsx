@@ -1,10 +1,16 @@
 'use client';
 
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import useSWR from 'swr';
 import { useSession } from 'next-auth/react';
 import { ClipboardList, Calendar, Bell, CheckCircle2, Clock, ArrowRight, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
+
+const TodayFilmingCard = dynamic(
+  () => import('@/components/dashboard/TodayFilmingCard').then((m) => m.TodayFilmingCard),
+  { ssr: false },
+);
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -158,6 +164,13 @@ export default function EmployeeDashboard() {
           )}
         </div>
       </div>
+
+      {/* Today's filming — filtered for this employee */}
+      <TodayFilmingCard
+        filmingHref="/employee/filming"
+        userFullName={session?.user.name ?? undefined}
+        canCreate={false}
+      />
 
       {/* Notification banner */}
       {unread > 0 && (

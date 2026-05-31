@@ -1,70 +1,89 @@
-import { NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth-helpers';
+import { requireAuth, requireAdminOrAbove } from '@/lib/auth-helpers';
 import { handleError, apiResponse } from '@/lib/api-response';
+import { logAudit } from '@/lib/audit';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(req: Request) {
   try {
     await requireAuth();
     const { searchParams } = new URL(req.url);
-    const from = searchParams.get('from');
-    const to = searchParams.get('to');
     const date = searchParams.get('date');
+    const month = searchParams.get('month');
+    const operatorName = searchParams.get('operatorName');
 
-    const where: any = {};
-    if (date) where.date = new Date(date);
-    else {
-      if (from) where.date = { ...where.date, gte: new Date(from) };
-      if (to) where.date = { ...where.date, lte: new Date(to) };
+    const where: Record<string, unknown> = {};
+
+    if (date) {
+      where.date = new Date(date);
+    } else if (month) {
+      const [y, m] = month.split('-').map(Number);
+      where.date = { gte: new Date(y, m - 1, 1), lte: new Date(y, m, 0) };
+    }
+
+    if (operatorName) {
+      where.operators = { some: { operatorNames: { has: operatorName } } };
     }
 
     const entries = await prisma.filmingEntry.findMany({
       where,
       include: {
         createdBy: { select: { id: true, fullName: true } },
-        operators: { include: { user: { select: { id: true, fullName: true, position: true } } } },
+        operators: { orderBy: { sortOrder: 'asc' } },
       },
-      orderBy: [{ date: 'asc' }, { cameraNo: 'asc' }],
+      orderBy: { date: 'desc' },
     });
 
     return apiResponse.success(entries);
-  } catch (e) { return handleError(e); }
+  } catch (e) {
+    return handleError(e);
+  }
 }
 
 export async function POST(req: Request) {
   try {
-    const session = await requireAuth();
-    if (session.user.role === 'EMPLOYEE') {
-      return NextResponse.json({ message: 'Ruxsat yo\'q' }, { status: 403 });
-    }
-
+    const session = await requireAdminOrAbove();
     const body = await req.json();
-    const { date, cameraNo, startTime, location, topic, reporters, equipment, operatorIds } = body;
+    const { date, approvedBy, operators } = body;
 
-    if (!date || !cameraNo || !startTime || !location || !topic) {
-      return NextResponse.json({ message: 'date, cameraNo, startTime, location va topic majburiy' }, { status: 400 });
+    if (!date) return apiResponse.validationError('Sana majburiy');
+    if (!Array.isArray(operators) || operators.length === 0) {
+      return apiResponse.validationError("Kamida bitta qator qo'shilishi shart");
     }
 
     const entry = await prisma.filmingEntry.create({
       data: {
         date: new Date(date),
-        cameraNo: Number(cameraNo),
-        startTime,
-        location,
-        topic,
-        reporters: reporters ?? null,
-        equipment: equipment ?? null,
+        approvedBy: approvedBy?.trim() || 'M. Safarov',
         createdById: session.user.id,
-        operators: operatorIds?.length
-          ? { create: operatorIds.map((uid: string) => ({ userId: uid })) }
-          : undefined,
+        operators: {
+          create: operators.map((op: any, idx: number) => ({
+            cameraNumber: String(op.cameraNumber ?? ''),
+            exitTime: String(op.exitTime ?? ''),
+            operatorNames: Array.isArray(op.operatorNames) ? op.operatorNames : [],
+            eventLocation: String(op.eventLocation ?? ''),
+            eventDescription: op.eventDescription?.trim() || null,
+            reporterNames: Array.isArray(op.reporterNames) ? op.reporterNames : [],
+            equipment: op.equipment?.trim() || 'HD jamlanmasi, mikrofon, chiroq, avtotransport',
+            sortOrder: typeof op.sortOrder === 'number' ? op.sortOrder : idx,
+          })),
+        },
       },
       include: {
         createdBy: { select: { id: true, fullName: true } },
-        operators: { include: { user: { select: { id: true, fullName: true } } } },
+        operators: { orderBy: { sortOrder: 'asc' } },
       },
     });
 
+    await logAudit(
+      session.user.id,
+      'CREATE',
+      'FilmingEntry',
+      entry.id,
+      `Tasvirga olish jadvali yaratildi: ${date}`,
+    );
+
     return apiResponse.created(entry);
-  } catch (e) { return handleError(e); }
+  } catch (e) {
+    return handleError(e);
+  }
 }

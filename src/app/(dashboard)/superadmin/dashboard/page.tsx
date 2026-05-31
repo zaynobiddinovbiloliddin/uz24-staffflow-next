@@ -15,6 +15,11 @@ const BarChartWidget = dynamic(() => import('@/components/charts/BarChartWidget'
   ssr: false,
 });
 
+const TodayFilmingCard = dynamic(
+  () => import('@/components/dashboard/TodayFilmingCard').then((m) => m.TodayFilmingCard),
+  { ssr: false },
+);
+
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 // ── KPI Card ────────────────────────────────────────────────────────────────
@@ -117,6 +122,9 @@ export default function SuperDashboard() {
           </Link>
         ))}
       </div>
+
+      {/* Today's filming preview */}
+      <TodayFilmingCard filmingHref="/superadmin/filming" canCreate={true} />
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

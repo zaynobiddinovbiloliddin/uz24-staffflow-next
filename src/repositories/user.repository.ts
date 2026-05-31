@@ -4,6 +4,7 @@ const SELECT = {
   id: true, fullName: true, username: true, role: true,
   position: true, phone: true, telegramId: true, avatar: true,
   isActive: true, departmentId: true, createdAt: true,
+  portfolioLinks: true,
   department: { select: { id: true, name: true, color: true } },
   _count: { select: { assignedTasks: true } },
 } as const;

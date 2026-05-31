@@ -50,6 +50,13 @@ enum PayrollStatus {
   PAID
 }
 
+enum ContactType {
+  DRIVER
+  REPORTER
+  TECHNICIAN
+  OTHER
+}
+
 // ==========================================
 // MODELS
 // ==========================================
@@ -64,8 +71,9 @@ model User {
   phone        String? @db.VarChar(20)
   telegramId   String? @db.VarChar(50)
   avatar       String?
-  isActive     Boolean @default(true)
-  departmentId String?
+  isActive       Boolean  @default(true)
+  departmentId   String?
+  portfolioLinks String[] @default([])
 
   department    Department?    @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   assignedTasks Task[]         @relation("AssignedTo")
@@ -83,9 +91,9 @@ model User {
   @@index([departmentId])
   @@index([isActive])
 
-  dailyStatuses    DailyStatus[]
-  filmingCreated   FilmingEntry[]    @relation("CreatedFilming")
-  filmingOperators FilmingOperator[] @relation("OperatorFilming")
+  dailyStatuses  DailyStatus[]
+  filmingCreated FilmingEntry[] @relation("CreatedFilming")
+  contacts       Contact[]      @relation("CreatedContacts")
 }
 
 model Department {
@@ -282,16 +290,12 @@ model DailyStatus {
 model FilmingEntry {
   id          String   @id @default(cuid())
   date        DateTime @db.Date
-  cameraNo    Int
-  startTime   String   @db.VarChar(5)
-  location    String   @db.VarChar(500)
-  topic       String   @db.VarChar(500)
-  reporters   String?  @db.VarChar(300)
-  equipment   String?  @db.VarChar(500)
+  title       String   @default("Tasvirga olish jadvali")
+  approvedBy  String   @default("M. Safarov")
   createdById String
 
-  createdBy  User              @relation("CreatedFilming", fields: [createdById], references: [id])
-  operators  FilmingOperator[]
+  createdBy User              @relation("CreatedFilming", fields: [createdById], references: [id])
+  operators FilmingOperator[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -301,12 +305,37 @@ model FilmingEntry {
 }
 
 model FilmingOperator {
-  id             String @id @default(cuid())
-  filmingEntryId String
-  userId         String
+  id               String  @id @default(cuid())
+  filmingEntryId   String
+  cameraNumber     String
+  exitTime         String
+  operatorNames    String[]
+  eventLocation    String
+  eventDescription String?
+  reporterNames    String[]
+  equipment        String  @default("HD jamlanmasi, mikrofon, chiroq, avtotransport")
+  sortOrder        Int     @default(0)
 
   filmingEntry FilmingEntry @relation(fields: [filmingEntryId], references: [id], onDelete: Cascade)
-  user         User         @relation("OperatorFilming", fields: [userId], references: [id])
+}
 
-  @@unique([filmingEntryId, userId])
+model Contact {
+  id               String      @id @default(cuid())
+  type             ContactType
+  fullName         String      @db.VarChar(100)
+  phone            String      @db.VarChar(30)
+  vehicleInfo      String?     @db.VarChar(100)
+  telegramUsername String?     @db.VarChar(50)
+  notes            String?     @db.VarChar(500)
+  isActive         Boolean     @default(true)
+  createdById      String
+
+  createdBy User @relation("CreatedContacts", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type])
+  @@index([isActive])
+  @@index([createdById])
 }

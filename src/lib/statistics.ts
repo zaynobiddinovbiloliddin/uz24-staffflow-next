@@ -1,14 +1,26 @@
+// Status codes: I=Ishda, D=Dam, S=Kasallik, K=Komandirovka, B=Ta'til, T=Zahira, O=Ortiqcha
 export const STATUS_CODES = {
-  I: { label: 'Ishda',          color: '#22c55e', bg: '#dcfce7', border: '#86efac' },
-  D: { label: 'Dam olish',      color: '#ef4444', bg: '#fee2e2', border: '#fca5a5' },
-  S: { label: 'Safar',          color: '#059669', bg: '#d1fae5', border: '#6ee7b7' },
-  K: { label: 'Kasallik',       color: '#f59e0b', bg: '#fef3c7', border: '#fde68a' },
-  T: { label: "Ta'til",         color: '#8b5cf6', bg: '#ede9fe', border: '#c4b5fd' },
-  B: { label: 'Boshqa',         color: '#6b7280', bg: '#f3f4f6', border: '#d1d5db' },
-  O: { label: 'Otpusk',         color: '#3b82f6', bg: '#dbeafe', border: '#93c5fd' },
+  I: { label: 'Ishda',             color: '#166534', bg: '#dcfce7', border: '#86efac' },
+  D: { label: 'Dam olish',         color: '#dc2626', bg: '#fee2e2', border: '#fca5a5' },
+  S: { label: "Kasallik/Sog'liq",  color: '#854d0e', bg: '#fef9c3', border: '#fef08a' },
+  K: { label: 'Komandirovka',      color: '#1e40af', bg: '#dbeafe', border: '#93c5fd' },
+  B: { label: "Ta'til",            color: '#6d28d9', bg: '#ede9fe', border: '#c4b5fd' },
+  T: { label: 'Zahira',            color: '#0e7490', bg: '#cffafe', border: '#67e8f9' },
+  O: { label: 'Ortiqcha smena',    color: '#c2410c', bg: '#ffedd5', border: '#fdba74' },
 } as const;
 
 export type StatusCode = keyof typeof STATUS_CODES;
+
+// Excel cell fill colors (ARGB format for xlsx library)
+export const EXCEL_COLORS: Record<StatusCode, string> = {
+  I: 'FF22c55e',
+  D: 'FFef4444',
+  S: 'FFeab308',
+  K: 'FF3b82f6',
+  B: 'FFa855f7',
+  T: 'FF06b6d4',
+  O: 'FFf97316',
+};
 
 export interface DailyStatus {
   date: string;
@@ -18,25 +30,27 @@ export interface DailyStatus {
 export interface UserMonthStats {
   userId: string;
   fullName: string;
-  workDays: number;
-  restDays: number;
-  travelDays: number;
-  sickDays: number;
-  vacationDays: number;
-  otherDays: number;
-  leaveDays: number;
+  workDays: number;     // I — Ishda
+  restDays: number;     // D — Dam olish
+  sickDays: number;     // S — Kasallik
+  travelDays: number;   // K — Komandirovka
+  vacationDays: number; // B — Ta'til
+  otherDays: number;    // T — Zahira
+  leaveDays: number;    // O — Ortiqcha smena
   totalHours: number;
   statuses: DailyStatus[];
 }
 
-// Derive status code from schedule shift type
+// Map Schedule.shiftType string to StatusCode
 export function shiftToStatusCode(shiftType: string | null): StatusCode {
   if (!shiftType) return 'D';
-  if (shiftType === 'Safar') return 'S';
-  if (shiftType === 'Kasallik') return 'K';
-  if (shiftType === "Ta'til") return 'T';
-  if (shiftType === 'Otpusk') return 'O';
-  if (shiftType === 'Dam') return 'D';
+  const t = shiftType.trim();
+  if (t === 'Kasallik') return 'S';
+  if (t === 'Komandirovka' || t === 'Safar') return 'K';
+  if (t === "Ta'til" || t === "Mehnat ta'til") return 'B';
+  if (t === 'Zahira' || t === 'Rezerv') return 'T';
+  if (t === 'Otpusk' || t === 'Ortiqcha') return 'O';
+  if (t === 'Dam' || t === 'Dam olish') return 'D';
   return 'I';
 }
 
@@ -57,16 +71,16 @@ export function computeMonthStats(
     statuses.push({ date: dateStr, code });
   }
 
-  let workDays = 0, restDays = 0, travelDays = 0, sickDays = 0;
+  let workDays = 0, restDays = 0, sickDays = 0, travelDays = 0;
   let vacationDays = 0, otherDays = 0, leaveDays = 0, totalMinutes = 0;
 
   for (const s of statuses) {
-    if (s.code === 'I') workDays++;
+    if      (s.code === 'I') workDays++;
     else if (s.code === 'D') restDays++;
-    else if (s.code === 'S') travelDays++;
-    else if (s.code === 'K') sickDays++;
-    else if (s.code === 'T') vacationDays++;
-    else if (s.code === 'B') otherDays++;
+    else if (s.code === 'S') sickDays++;
+    else if (s.code === 'K') travelDays++;
+    else if (s.code === 'B') vacationDays++;
+    else if (s.code === 'T') otherDays++;
     else if (s.code === 'O') leaveDays++;
   }
 
@@ -78,7 +92,7 @@ export function computeMonthStats(
 
   return {
     userId, fullName,
-    workDays, restDays, travelDays, sickDays,
+    workDays, restDays, sickDays, travelDays,
     vacationDays, otherDays, leaveDays,
     totalHours: Math.round(totalMinutes / 60),
     statuses,

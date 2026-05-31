@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Users, ClipboardList, Building2, Calendar,
   Camera, Car, BarChart2, ShieldCheck,
-  Bell, Settings, ChevronRight, X, TrendingUp, Video,
+  Bell, Settings, ChevronRight, X, TrendingUp, Video, BookUser,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -22,6 +22,7 @@ const SUPERADMIN_MENU: NavItem[] = [
   { href: '/superadmin/equipment',  label: 'Uskunalar',          icon: <Camera size={18} /> },
   { href: '/superadmin/vehicles',   label: 'Transport',          icon: <Car size={18} /> },
   { href: '/superadmin/filming',    label: 'Tasvir jadvali',     icon: <Video size={18} /> },
+  { href: '/superadmin/contacts',   label: 'Kontaktlar',         icon: <BookUser size={18} /> },
   { href: '/superadmin/statistics', label: 'Statistika',         icon: <TrendingUp size={18} /> },
   { href: '/superadmin/analytics',  label: 'Tahlil',             icon: <BarChart2 size={18} /> },
   { href: '/superadmin/audit-logs', label: 'Audit jurnal',       icon: <ShieldCheck size={18} /> },
@@ -35,6 +36,7 @@ const ADMIN_MENU: NavItem[] = [
   { href: '/admin/tasks',          label: 'Vazifalar',          icon: <ClipboardList size={18} /> },
   { href: '/admin/schedules',      label: 'Ish jadvali',        icon: <Calendar size={18} /> },
   { href: '/admin/filming',        label: 'Tasvir jadvali',     icon: <Video size={18} /> },
+  { href: '/admin/contacts',       label: 'Kontaktlar',         icon: <BookUser size={18} /> },
   { href: '/admin/statistics',     label: 'Statistika',         icon: <TrendingUp size={18} /> },
   { href: '/admin/notifications',  label: 'Bildirishnomalar',   icon: <Bell size={18} /> },
   { href: '/admin/profile',        label: 'Profil',             icon: <Settings size={18} /> },
@@ -45,6 +47,7 @@ const EMPLOYEE_MENU: NavItem[] = [
   { href: '/employee/tasks',         label: 'Mening vazifalarim', icon: <ClipboardList size={18} /> },
   { href: '/employee/schedule',      label: 'Mening jadvalim',    icon: <Calendar size={18} /> },
   { href: '/employee/filming',       label: 'Tasvir jadvali',     icon: <Video size={18} /> },
+  { href: '/employee/contacts',      label: 'Kontaktlar',         icon: <BookUser size={18} /> },
   { href: '/employee/statistics',    label: 'Statistika',         icon: <TrendingUp size={18} /> },
   { href: '/employee/notifications', label: 'Bildirishnomalar',   icon: <Bell size={18} /> },
   { href: '/employee/profile',       label: 'Profil',             icon: <Users size={18} /> },

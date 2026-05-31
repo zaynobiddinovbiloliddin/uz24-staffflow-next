@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import useSWR from 'swr';
-import { Search, Users, Phone, Building2, ClipboardList } from 'lucide-react';
+import { Search, Users, Phone, Building2, ClipboardList, Link2, ChevronRight } from 'lucide-react';
 
 export default function AdminEmployeesPage() {
   const [search, setSearch] = useState('');
@@ -41,9 +42,10 @@ export default function AdminEmployeesPage() {
           </div>
         )}
         {users.map((user: any) => (
-          <div
+          <Link
             key={user.id}
-            className="list-row bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 hover:shadow-md transition-all duration-200"
+            href={`/admin/employees/${user.id}`}
+            className="list-row bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800 transition-all duration-200 block group"
           >
             <div className="flex items-center gap-3 mb-3">
               {user.avatar ? (
@@ -84,8 +86,19 @@ export default function AdminEmployeesPage() {
                 <ClipboardList size={11} className="text-gray-400 flex-shrink-0" />
                 <span>{user._count?.assignedTasks ?? 0} ta faol vazifa</span>
               </div>
+              {(user.portfolioLinks?.length ?? 0) > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <Link2 size={11} className="text-gray-400 flex-shrink-0" />
+                  <span>{user.portfolioLinks.length} ta portfolio</span>
+                </div>
+              )}
             </div>
-          </div>
+            <div className="mt-2 flex justify-end">
+              <span className="text-xs text-blue-500 dark:text-blue-400 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                Batafsil <ChevronRight size={11} />
+              </span>
+            </div>
+          </Link>
         ))}
       </div>
     </div>
