@@ -39,7 +39,17 @@ async function exportWeek(schedules: any[], from: string, to: string) {
   }));
   await exportWeekScheduleWord(groups, `${from} — ${to}`);
 }
-const SHIFTS = ['Kunduzgi', 'Kechki', 'Tungi', 'Qisqartirilgan'];
+const SHIFTS = [
+  // Ish smenaları (I — Ishda)
+  'Kunduzgi', 'Kechki', 'Tungi', 'Qisqartirilgan',
+  // Boshqa holatlar
+  'Dam',           // D — Dam olish
+  'Kasallik',      // S — Kasallik/Sog'liq
+  'Komandirovka',  // K — Komandirovka
+  "Ta'til",        // B — Ta'til
+  'Zahira',        // T — Zahira/Rezerv
+  'Ortiqcha',      // O — Ortiqcha smena
+];
 const EMPTY = { userId: '', date: '', startTime: '09:00', endTime: '18:00', shiftType: 'Kunduzgi', note: '' };
 const DAY_NAMES = ['Dush', 'Sesh', 'Chor', 'Pay', 'Juma', 'Shan', 'Yak'];
 const SHIFT_COLORS: Record<string, string> = {

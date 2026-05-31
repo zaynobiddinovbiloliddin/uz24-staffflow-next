@@ -89,11 +89,15 @@ async function main() {
   console.log('✅ Vazifalar yaratildi');
 
   // ── Jadvallar — May va Iyun 2026 + bugundan 7 kun ──────────────────────────
+  // Barcha 7 xodim uchun jadval (admin va superadmin ham)
   const employees = [
-    { user: emp1, start: '08:00', end: '17:00', shift: 'Kunduzgi', sickDay: 7  },
-    { user: emp2, start: '08:00', end: '17:00', shift: 'Kunduzgi', sickDay: 14 },
-    { user: emp3, start: '14:00', end: '22:00', shift: 'Kechki',   sickDay: 21 },
-    { user: emp4, start: '09:00', end: '18:00', shift: 'Kunduzgi', sickDay: 10 },
+    { user: emp1,      start: '08:00', end: '17:00', shift: 'Kunduzgi', sickDay: 7  },
+    { user: emp2,      start: '08:00', end: '17:00', shift: 'Kunduzgi', sickDay: 14 },
+    { user: emp3,      start: '14:00', end: '22:00', shift: 'Kechki',   sickDay: 21 },
+    { user: emp4,      start: '09:00', end: '18:00', shift: 'Kunduzgi', sickDay: 10 },
+    { user: admin1,    start: '09:00', end: '18:00', shift: 'Kunduzgi', sickDay: 5  },
+    { user: admin2,    start: '09:00', end: '18:00', shift: 'Kunduzgi', sickDay: 18 },
+    { user: superadmin,start: '09:00', end: '18:00', shift: 'Kunduzgi', sickDay: 25 },
   ];
 
   // Generate schedules for a full month

@@ -45,6 +45,12 @@ export async function POST(req: Request) {
     if (!fullName?.trim()) return apiResponse.validationError('Ism familiya majburiy');
     if (!phone?.trim())  return apiResponse.validationError('Telefon raqam majburiy');
 
+    // Session foydalanuvchisi hali ham mavjudligini tekshiramiz
+    const sessionUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { id: true } });
+    if (!sessionUser) {
+      return apiResponse.unauthorized('Seansingiz eskirgan. Iltimos, tizimdan chiqib qayta kiring.');
+    }
+
     const contact = await prisma.contact.create({
       data: {
         type,

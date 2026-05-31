@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import useSWR from 'swr';
 import { Download, Users, CheckCircle, Moon, Plane } from 'lucide-react';
-import { STATUS_CODES, StatusCode } from '@/lib/statistics';
+import { STATUS_CODES, StatusCode, shiftToStatusCode } from '@/lib/statistics';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -52,19 +52,22 @@ export function StatisticsPage({ role, currentUserId, currentUserName }: Props) 
   // Build grid data: for each user, each day has a status
   const grid = useMemo(() => {
     return users.map((u) => {
-      const days: { day: number; code: StatusCode; fromSchedule: boolean }[] = [];
+      const days: { day: number; code: StatusCode | null; fromSchedule: boolean }[] = [];
       for (let d = 1; d <= daysInMonth; d++) {
         const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const ds = statuses.find((s) => s.userId === u.id && s.date?.slice(0, 10) === dateStr);
         if (ds) {
+          // DailyStatus yozuvi bor — to'g'ridan-to'g'ri ishlatamiz
           days.push({ day: d, code: ds.status as StatusCode, fromSchedule: false });
         } else {
-          const hasSched = schedules.some((s) => s.userId === u.id && s.date?.slice(0, 10) === dateStr);
-          days.push({ day: d, code: hasSched ? 'I' : 'D', fromSchedule: true });
+          // Schedule.shiftType bo'yicha aniqlash (was: always 'I' if any schedule exists)
+          const sched = schedules.find((s) => s.userId === u.id && s.date?.slice(0, 10) === dateStr);
+          const code: StatusCode | null = sched ? (shiftToStatusCode(sched.shiftType) ?? 'I') : null;
+          days.push({ day: d, code, fromSchedule: true });
         }
       }
-      const workDays = days.filter((d) => d.code === 'I').length;
-      const restDays = days.filter((d) => d.code === 'D').length;
+      const workDays   = days.filter((d) => d.code === 'I').length;
+      const restDays   = days.filter((d) => d.code === 'D').length;
       const travelDays = days.filter((d) => d.code === 'S').length;
       return { ...u, days, workDays, restDays, travelDays };
     });
@@ -177,15 +180,26 @@ export function StatisticsPage({ role, currentUserId, currentUserName }: Props) 
                     {u.position && <div className="text-[10px] text-gray-400 truncate">{u.position}</div>}
                   </td>
                   {u.days.map((d: any) => {
-                    const info = STATUS_CODES[d.code as StatusCode] ?? STATUS_CODES['D'];
+                    const info = d.code ? STATUS_CODES[d.code as StatusCode] : null;
                     const isWeekend = ['Ya', 'Sh'].includes(dayLabels[d.day - 1]);
                     return (
                       <td key={d.day} className="text-center p-0.5">
-                        <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-[10px] font-bold ${isWeekend && d.code === 'D' ? 'opacity-40' : ''}`}
-                          style={{ background: info.bg, color: info.color, border: `1px solid ${info.border}` }}
-                          title={`${u.fullName} — ${d.day}-${MONTH_NAMES[month]}: ${info.label}`}>
-                          {d.code}
-                        </span>
+                        {info ? (
+                          <span
+                            className={`inline-flex items-center justify-center w-6 h-6 rounded text-[10px] font-bold ${isWeekend && d.code === 'D' ? 'opacity-50' : ''}`}
+                            style={{ background: info.bg, color: info.color, border: `1px solid ${info.border}` }}
+                            title={`${u.fullName} — ${d.day}-${MONTH_NAMES[month]}: ${info.label}`}
+                          >
+                            {d.code}
+                          </span>
+                        ) : (
+                          <span
+                            className={`inline-flex items-center justify-center w-6 h-6 rounded text-[10px] ${isWeekend ? 'text-red-200 dark:text-red-900' : 'text-gray-100 dark:text-slate-700'}`}
+                            title={`${u.fullName} — ${d.day}-${MONTH_NAMES[month]}: belgilanmagan`}
+                          >
+                            {isWeekend ? 'D' : '·'}
+                          </span>
+                        )}
                       </td>
                     );
                   })}
@@ -207,7 +221,7 @@ export function StatisticsPage({ role, currentUserId, currentUserName }: Props) 
         <div className="space-y-2">
           {grid.map((u) => {
             const counts: Record<StatusCode, number> = { I: 0, D: 0, S: 0, K: 0, T: 0, B: 0, O: 0 };
-            u.days.forEach((d: any) => { const c = d.code as StatusCode; counts[c] = (counts[c] || 0) + 1; });
+            u.days.forEach((d: any) => { if (d.code) { const c = d.code as StatusCode; counts[c] = (counts[c] || 0) + 1; } });
             return (
               <div key={u.id} className="flex items-center gap-3 flex-wrap bg-gray-50 dark:bg-slate-700/30 rounded-lg px-3 py-2">
                 <span className="font-medium text-sm text-gray-800 dark:text-gray-200 min-w-[140px] truncate">{u.fullName}</span>

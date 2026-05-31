@@ -118,11 +118,11 @@ export async function GET(
               children: [
                 new Paragraph({
                   alignment: AlignmentType.CENTER,
-                  children: [run('"TASDIQLAYMAN"', { bold: true, size: 22 })],
+                  children: [run('"TASDIQLAYMAN"', { bold: true, size: 24 })],
                 }),
                 new Paragraph({
                   alignment: AlignmentType.CENTER,
-                  spacing: { before: 40 },
+                  spacing: { before: 60 },
                   children: [run('"O\'zbekiston 24" ijodiy', { size: 20 })],
                 }),
                 new Paragraph({
@@ -131,7 +131,7 @@ export async function GET(
                 }),
                 new Paragraph({
                   alignment: AlignmentType.CENTER,
-                  spacing: { before: 40 },
+                  spacing: { before: 80 },
                   children: [run(`__________${entry.approvedBy}`, { size: 20 })],
                 }),
               ],

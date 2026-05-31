@@ -9,7 +9,10 @@ import { toast } from 'sonner';
 
 const ConfirmModal = dynamic(() => import('@/components/ui/ConfirmModal'), { ssr: false });
 
-const SHIFTS = ['Kunduzgi', 'Kechki', 'Tungi', 'Qisqartirilgan'];
+const SHIFTS = [
+  'Kunduzgi', 'Kechki', 'Tungi', 'Qisqartirilgan',
+  'Dam', 'Kasallik', 'Komandirovka', "Ta'til", 'Zahira', 'Ortiqcha',
+];
 
 async function exportFilmingAdmin(schedules: any[], from: string) {
   if (!schedules.length) { const { toast: t } = await import('sonner'); t.error("Jadval yo'q"); return; }
